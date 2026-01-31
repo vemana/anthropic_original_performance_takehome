@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Literal
 import random
+from util import pretty_print
 
 Engine = Literal["alu", "load", "store", "flow"]
 Instruction = dict[Engine, list[tuple]]
@@ -60,6 +61,24 @@ N_CORES = 1
 SCRATCH_SIZE = 1536
 BASE_ADDR_TID = 100000
 
+def pretty_print_mem(mem, scratch):
+  print(f"rounds = {mem[0]}")
+  print(f"nodes = {mem[1]}")
+  print(f"item_count = {mem[2]}")
+  print(f"height = {mem[3]}")
+  print(f"tree_val_ptr = {mem[4]}")
+  print(f"input_ind_ptr = {mem[5]}")
+  print(f"input_val_ptr = {mem[6]}")
+  pretty_print(mem)
+
+  print("\n\nRegister content below\n")
+  pretty_print(scratch)
+
+
+def pretty_print_inp_values(mem):
+    batch_size = mem[2]
+    inp_values_p = mem[6]
+    pretty_print(mem[inp_values_p:inp_values_p + batch_size], "FIRST PRINTING FROM MACHINE")
 
 class Machine:
     """
@@ -119,6 +138,7 @@ class Machine:
             self.setup_trace()
         else:
             self.trace = None
+#         pretty_print_inp_values(self.mem)
 
     def rewrite_instr(self, instr):
         """
@@ -207,6 +227,7 @@ class Machine:
                     core.state = CoreState.STOPPED
                     continue
                 instr = self.program[core.pc]
+#                 print(f"Executing: {instr}")
                 if self.prints:
                     self.print_step(instr, core)
                 core.pc += 1
@@ -269,7 +290,8 @@ class Machine:
     def load(self, core, *slot):
         match slot:
             case ("load", dest, addr):
-                # print(dest, addr, core.scratch[addr])
+#                 if dest == 587:
+#                     print("Loading", dest, addr, core.scratch[addr])
                 self.scratch_write[dest] = self.mem[core.scratch[addr]]
             case ("load_offset", dest, addr, offset):
                 # Handy for treating vector dest and addr as a full block in the mini-compiler if you want
@@ -277,6 +299,7 @@ class Machine:
                     core.scratch[addr + offset]
                 ]
             case ("vload", dest, addr):  # addr is a scalar
+#                 print(f"Found {core.scratch[addr]} in {addr}; vloading to {dest}")
                 addr = core.scratch[addr]
                 for vi in range(VLEN):
                     self.scratch_write[dest + vi] = self.mem[addr + vi]
@@ -292,6 +315,7 @@ class Machine:
                 self.mem_write[addr] = core.scratch[src]
             case ("vstore", addr, src):  # addr is a scalar
                 addr = core.scratch[addr]
+#                 print(f"STORING TO ADDRESS {addr} VLEN starting at {src}")
                 for vi in range(VLEN):
                     self.mem_write[addr + vi] = core.scratch[src + vi]
             case _:
@@ -315,8 +339,11 @@ class Machine:
             case ("halt",):
                 core.state = CoreState.STOPPED
             case ("pause",):
+                print("ENCOUNTERING PAUSE STMT")
                 if self.enable_pause:
                     core.state = CoreState.PAUSED
+                    print("Dumping memory on account of pause")
+                    pretty_print_mem(self.mem, core.scratch)
             case ("trace_write", val):
                 core.trace_buf.append(core.scratch[val])
             case ("cond_jump", cond, addr):
@@ -545,7 +572,9 @@ def reference_kernel2(mem: list[int], trace: dict[Any, int] = {}):
     forest_values_p = mem[4]
     inp_indices_p = mem[5]
     inp_values_p = mem[6]
-    yield mem
+    
+#     pretty_print(mem[inp_values_p:inp_values_p + batch_size], "FIRST PRINTING FROM REFERENCE2")
+#     yield mem
     for h in range(rounds):
         for i in range(batch_size):
             idx = mem[inp_indices_p + i]
@@ -562,6 +591,8 @@ def reference_kernel2(mem: list[int], trace: dict[Any, int] = {}):
             trace[(h, i, "wrapped_idx")] = idx
             mem[inp_values_p + i] = val
             mem[inp_indices_p + i] = idx
+#         yield mem
+        
     # You can add new yields or move this around for debugging
     # as long as it's matched by pause instructions.
     # The submission tests evaluate only on final memory.

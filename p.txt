@@ -1,0 +1,565 @@
+
+register tree_values_ptr = @4
+register inp_idx_ptr = @5
+register inp_values_ptr = @6
+register vlen = 8
+register[] treevals = @tree_values_ptr
+
+#register[] t0 = treevals[0]
+#register[] t1 = treevals[1]
+#register[] t2 = treevals[2]
+#register[] t3 = treevals[3]
+#register[] t4 = treevals[4]
+
+register[] t5 = treevals[5]
+register[] t6 = treevals[6]
+
+end global
+
+# tidx is an implicit register filled by compiler
+thread register tidx
+
+# Work registers
+thread register[] v, idx, t, p1, p2
+
+thread register valoffset
+valoffset = tidx * vlen
+valoffset = valoffset + inp_values_ptr
+v = @valoffset
+
+#thread register idxoffset
+#idxoffset = tidx * vlen
+#idxoffset = idxoffset + inp_idx_ptr
+
+################# Round 0 ##################
+t = treevals[0]
+v = v ^ t
+
+p1 = v + 0x7ED55D16
+p2 = v << 12
+v = p1 + p2
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+p1 = v + 0x165667B1
+p2 = v << 5
+v = p1 + p2
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+p1 = v + 0xFD7046C5
+p2 = v << 3
+v = p1 + p2
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+idx = p1 ? 9 : 8
+
+################# Round 1 ##################
+#t = p1 ? t2 : t1
+#v = v ^ t
+
+p2 = treevals[2]
+t = treevals[1]
+t = p1 ? p2 : t
+v = v ^ t
+
+p1 = v + 0x7ED55D16
+p2 = v << 12
+v = p1 + p2
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+p1 = v + 0x165667B1
+p2 = v << 5
+v = p1 + p2
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+p1 = v + 0xFD7046C5
+p2 = v << 3
+v = p1 + p2
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+p1 = p1 ? -5 : -6
+idx = idx * 2 + p1
+
+################# Round 2 ##################
+t = treevals[3]
+p2 = treevals[4]
+p1 = idx < 11 ? t : p2
+p2 = 12 < idx ? t6 : t5
+t = idx < 12 ? p1 : p2
+
+v = v ^ t
+
+p1 = v + 0x7ED55D16
+p2 = v << 12
+v = p1 + p2
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+p1 = v + 0x165667B1
+p2 = v << 5
+v = p1 + p2
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+p1 = v + 0xFD7046C5
+p2 = v << 3
+v = p1 + p2
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+p1 = p1 ? -5 : -6
+idx = idx * 2 + p1
+
+################# Round 3 ##################
+t = @idx[]
+v = v ^ t
+
+p1 = v + 0x7ED55D16
+p2 = v << 12
+v = p1 + p2
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+p1 = v + 0x165667B1
+p2 = v << 5
+v = p1 + p2
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+p1 = v + 0xFD7046C5
+p2 = v << 3
+v = p1 + p2
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+p1 = p1 ? -5 : -6
+idx = idx * 2 + p1
+
+################# Round 4 ##################
+t = @idx[]
+v = v ^ t
+
+p1 = v + 0x7ED55D16
+p2 = v << 12
+v = p1 + p2
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+p1 = v + 0x165667B1
+p2 = v << 5
+v = p1 + p2
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+p1 = v + 0xFD7046C5
+p2 = v << 3
+v = p1 + p2
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+p1 = p1 ? -5 : -6
+idx = idx * 2 + p1
+
+################# Round 5 ##################
+t = @idx[]
+v = v ^ t
+
+p1 = v + 0x7ED55D16
+p2 = v << 12
+v = p1 + p2
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+p1 = v + 0x165667B1
+p2 = v << 5
+v = p1 + p2
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+p1 = v + 0xFD7046C5
+p2 = v << 3
+v = p1 + p2
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+p1 = p1 ? -5 : -6
+idx = idx * 2 + p1
+
+################# Round 6 ##################
+t = @idx[]
+v = v ^ t
+
+p1 = v + 0x7ED55D16
+p2 = v << 12
+v = p1 + p2
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+p1 = v + 0x165667B1
+p2 = v << 5
+v = p1 + p2
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+p1 = v + 0xFD7046C5
+p2 = v << 3
+v = p1 + p2
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+p1 = p1 ? -5 : -6
+idx = idx * 2 + p1
+
+################# Round 7 ##################
+t = @idx[]
+v = v ^ t
+
+p1 = v + 0x7ED55D16
+p2 = v << 12
+v = p1 + p2
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+p1 = v + 0x165667B1
+p2 = v << 5
+v = p1 + p2
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+p1 = v + 0xFD7046C5
+p2 = v << 3
+v = p1 + p2
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+p1 = p1 ? -5 : -6
+idx = idx * 2 + p1
+
+################# Round 8 ##################
+t = @idx[]
+v = v ^ t
+
+p1 = v + 0x7ED55D16
+p2 = v << 12
+v = p1 + p2
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+p1 = v + 0x165667B1
+p2 = v << 5
+v = p1 + p2
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+p1 = v + 0xFD7046C5
+p2 = v << 3
+v = p1 + p2
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+p1 = p1 ? -5 : -6
+idx = idx * 2 + p1
+
+################# Round 9 ##################
+t = @idx[]
+v = v ^ t
+
+p1 = v + 0x7ED55D16
+p2 = v << 12
+v = p1 + p2
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+p1 = v + 0x165667B1
+p2 = v << 5
+v = p1 + p2
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+p1 = v + 0xFD7046C5
+p2 = v << 3
+v = p1 + p2
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+p1 = p1 ? -5 : -6
+idx = idx * 2 + p1
+
+################# Round 10 ##################
+t = @idx[]
+v = v ^ t
+
+p1 = v + 0x7ED55D16
+p2 = v << 12
+v = p1 + p2
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+p1 = v + 0x165667B1
+p2 = v << 5
+v = p1 + p2
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+p1 = v + 0xFD7046C5
+p2 = v << 3
+v = p1 + p2
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+
+################# Round 11 ##################
+t = treevals[0]
+v = v ^ t
+
+p1 = v + 0x7ED55D16
+p2 = v << 12
+v = p1 + p2
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+p1 = v + 0x165667B1
+p2 = v << 5
+v = p1 + p2
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+p1 = v + 0xFD7046C5
+p2 = v << 3
+v = p1 + p2
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+idx = p1 ? 9 : 8
+
+################# Round 12 ##################
+p2 = treevals[2]
+t = treevals[1]
+t = p1 ? p2 : t
+v = v ^ t
+
+p1 = v + 0x7ED55D16
+p2 = v << 12
+v = p1 + p2
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+p1 = v + 0x165667B1
+p2 = v << 5
+v = p1 + p2
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+p1 = v + 0xFD7046C5
+p2 = v << 3
+v = p1 + p2
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+p1 = p1 ? -5 : -6
+idx = idx * 2 + p1
+
+################# Round 13 ##################
+#p1 = idx < 11 ? t3 : t4
+#p2 = 12 < idx ? t6 : t5
+#t = idx < 12 ? p1 : p2
+
+t = treevals[3]
+p2 = treevals[4]
+p1 = idx < 11 ? t : p2
+p2 = 12 < idx ? t6 : t5
+t = idx < 12 ? p1 : p2
+
+v = v ^ t
+
+p1 = v + 0x7ED55D16
+p2 = v << 12
+v = p1 + p2
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+p1 = v + 0x165667B1
+p2 = v << 5
+v = p1 + p2
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+p1 = v + 0xFD7046C5
+p2 = v << 3
+v = p1 + p2
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+p1 = p1 ? -5 : -6
+idx = idx * 2 + p1
+
+################# Round 14 ##################
+t = @idx[]
+v = v ^ t
+
+p1 = v + 0x7ed55d16
+p2 = v << 12
+v = p1 + p2
+
+p1 = v ^ 0xc761c23c
+p2 = v >> 19
+v = p1 ^ p2
+
+p1 = v + 0x165667b1
+p2 = v << 5
+v = p1 + p2
+
+p1 = v + 0xd3a2646c
+p2 = v << 9
+v = p1 ^ p2
+
+p1 = v + 0xfd7046c5
+p2 = v << 3
+v = p1 + p2
+
+p1 = v ^ 0xb55a4f09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+p1 = p1 ? -5 : -6
+idx = idx * 2 + p1
+
+################# round 15 ##################
+t = @idx[]
+v = v ^ t
+
+p1 = v + 0x7ed55d16
+p2 = v << 12
+v = p1 + p2
+
+p1 = v ^ 0xc761c23c
+p2 = v >> 19
+v = p1 ^ p2
+
+p1 = v + 0x165667b1
+p2 = v << 5
+v = p1 + p2
+
+p1 = v + 0xd3a2646c
+p2 = v << 9
+v = p1 ^ p2
+
+p1 = v + 0xfd7046c5
+p2 = v << 3
+v = p1 + p2
+
+p1 = v ^ 0xb55a4f09
+p2 = v >> 16
+v = p1 ^ p2
+
+@valoffset = v
+
+# Below lines are ONLY for correctness checking 
+#p1 = v % 2
+#p1 = p1 ? -5 : -6
+#idx = idx * 2 + p1
+#idx = idx - 7
+#@idxoffset = idx
