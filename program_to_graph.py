@@ -30,7 +30,7 @@ from parser import (
         VariableDeclarationStmt,
         )
 
-from scratch import ScratchSpace
+from scratch import ScratchSpace, InsufficientRegisterCountException
 from instr_graph_model import InstrGraph
 from instr_graph_model import (
         EX_UNITS, EX_VALU, EX_ALU, EX_LOAD, EX_STORE, EX_FLOW, 
@@ -47,7 +47,7 @@ def estimate_max_conc_threads(program: Program, num_threads: int) -> Program:
         return __program_to_work(program, num_threads, 1)
     
     max_conc_threads = 2 + ss.free_space() // ss.per_thread_space()
-    return max_conc_threads
+    return min(max_conc_threads, num_threads)
 
 
 def program_to_work(program: Program, num_threads: int, conc_threads: int):
@@ -104,6 +104,7 @@ class IRPipeline:
         self.conc_threads = conc_threads
         self.ss = ScratchSpace()
         self.graph = InstrGraph(self.ss, num_threads)
+        self.__handle_const(VLEN * VLEN, is_vector=True) # Ensure this constant is always available
 
 
     def __add(self, is_global:bool, linstr):
@@ -241,8 +242,8 @@ class IRPipeline:
                         """
                         assert l1addr.name != lname, error_message
                         assert r1addr.name != lname, error_message
-                        caddr = write_variable(lname, True)
-                        instrs.append((EX_VALU, (op, caddr, l1addr, r1addr)))
+                        instrs.append((EX_VALU, (op, write_variable(lname, True), l1addr, r1addr)))
+                        caddr = read_variable(lname, True)
 
                 instrs.append((EX_FLOW, ("vselect"
                                          , write_variable(lname, True)
@@ -257,7 +258,7 @@ class IRPipeline:
                 else:
                     instrs = [(EX_VALU, ("vbroadcast"
                                          , write_variable(lname, True)
-                                         , self.__addr_of(intconst, False)))]
+                                         , self.__addr_of(intconst, False, is_read=True)))]
 
             case Variable() as v:
                 # lname = v[constant]

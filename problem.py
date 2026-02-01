@@ -227,7 +227,7 @@ class Machine:
                     core.state = CoreState.STOPPED
                     continue
                 instr = self.program[core.pc]
-#                 print(f"Executing: {instr}")
+#                 print(f"Executing {self.cycle + 1}: 422 = {core.scratch[422]}, 934 = {core.scratch[934]}, {instr}")
                 if self.prints:
                     self.print_step(instr, core)
                 core.pc += 1
@@ -291,7 +291,7 @@ class Machine:
         match slot:
             case ("load", dest, addr):
 #                 if dest == 587:
-#                     print("Loading", dest, addr, core.scratch[addr])
+#                 print("Loading", dest, addr, core.scratch[addr])
                 self.scratch_write[dest] = self.mem[core.scratch[addr]]
             case ("load_offset", dest, addr, offset):
                 # Handy for treating vector dest and addr as a full block in the mini-compiler if you want

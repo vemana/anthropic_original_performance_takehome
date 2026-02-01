@@ -18,7 +18,6 @@ We recommend you look through problem.py next.
 
 from collections import defaultdict
 from kernel_builder import KernelBuilder
-from kernel_builder_original import KernelBuilderOriginal
 import random
 import unittest
 
@@ -55,7 +54,6 @@ def do_kernel_test(
     inp = Input.generate(forest, batch_size, rounds)
     mem = build_mem_image(forest, inp)
 
-#     kb = KernelBuilderOriginal()
     kb = KernelBuilder()
     instrs = kb.build_kernel(forest.height, len(forest.values), len(inp.indices), rounds)
     # print(instrs)
@@ -95,6 +93,9 @@ def do_kernel_test(
           pretty_print(machine.mem[inp_values_p:inp_values_p + len(inp.values)])
           pretty_print(ref_mem[inp_values_p:inp_values_p + len(inp.values)])
 
+          print(f"XXXXXXXXXXXXXXXXXXXXXXX REGISTER CONTENT XXXXXXXXXXXXXXXXXXXXXXXXXXX")
+          pretty_print(machine.cores[0].scratch)
+
         gotindices = machine.mem[inp_indices_p : inp_indices_p + len(inp.values)]
         matching_indices = gotindices == ref_mem[inp_indices_p : inp_indices_p + len(inp.values)]
         dmatchi = '' if matching_indices else "DON'T"
@@ -102,6 +103,7 @@ def do_kernel_test(
           print(f"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX. INPUT INDICES {dmatchi} MATCH. First machine, then reference. Round = {rnd}")
           pretty_print(gotindices)
           pretty_print(ref_mem[inp_indices_p:inp_indices_p + len(inp.values)])
+
         
         assert (
             machine.mem[inp_values_p : inp_values_p + len(inp.values)]
@@ -150,6 +152,7 @@ class Tests(unittest.TestCase):
 
     def test_kernel_cycles(self):
         do_kernel_test(10, 16, 256)
+#         do_kernel_test(10, 1, 16)
 #         do_kernel_test(2, 1, 16)
 
 

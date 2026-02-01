@@ -1,0 +1,126 @@
+# Intro
+This prompt generates a parser from the grammar of a simple language. The language is then compiled and optimized into machine code for the problem's machine. The language is described by language.md but even easier perhaps is to look at an example in `parser.py`.
+
+
+# Base Prompt
+Write a Parser in python using Parser Combinator style. I will give the grammar and explain the syntax of the grammar. The output should be a python structure corresponding to the root of the grammar.
+
+The rules for the grammar are as follows:
+1) The root node of the grammar is the non-terminal `Program`
+2) I use syntax `A :: B C D` to mean a rule in the grammar where the non-terminal A can expand to a sequence of `B C D` where B, C, D are either non-terminals or terminals
+3) I use syntax `X :: Y W | Z ` to mean a production in the grammar where the non-terminal X can expand to either one of (a) `Y W` in sequence or (b) `Z`. That is, | represents the choice operator.
+4) I use syntax `regex(r)` to mean that r should be treated as a regular expression.
+5) I use `'xyz'` to mean the literal string xyz. That is, literals are single-quoted 
+6) The root is the non-terminal `Program`.
+7) I use `X :: (A B)*` to mean the production rule that X can expand to 0 or more instances of the sequence `A B`. That is, the ( and ) are grouping operators. Note that if I wanted a literal parenthesis, the rule would have been `X :: '(' A B ')'`
+8) I use `{}` to indicate inline names for non-terminals. For example `A :: {Good} B C | {Best} X Y Z` is effectively equivalent to `A :: Good | Best`, `Good :: B C`, `Best :: X Y`. In other words, they just name a non-terminal for convenience
+9) I use syntax `?` to indicate zero or one times. For example `X :: A? B` matches either `A B` or `B` but not `A A B`
+10) I use syntax `+` to indicate one or more times. For example `X :: A+ B` matches `A B` and `A A B` but not `B`
+
+The grammar is as follows:
+
+SPACE :: regex([ ][ ]*)
+OPT_SPACE :: regex([ ]*)
+NL :: regex([ ]*(#[^\n]*)?\n[ ]*)
+DIGIT :: regex([0-9])
+HEX_DIGIT :: regex([0-9A-Fa-f])
+SMALL :: regex([a-z])
+LETTER :: regex([a-zA-Z0-9_])
+MINUS :: '-'
+OPERATOR :: '*' | '+' | '^' | '>>' | '-' | '<<' | '%'
+CMP_OPERATOR :: '<' | '=='
+LIT_EQ :: OPT_SPACE '=' OPT_SPACE
+LIT_QU :: OPT_SPACE '?' OPT_SPACE
+LIT_OP :: OPT_SPACE OPERATOR OPT_SPACE
+LIT_CMP_OP :: OPT_SPACE CMP_OPERATOR OPT_SPACE
+LIT_COMMA :: OPT_SPACE ',' OPT_SPACE
+LIT_COLON :: OPT_SPACE ':' OPT_SPACE
+LIT_PLUS :: OPT_SPACE '+' OPT_SPACE
+LIT_MULT :: OPT_SPACE '*' OPT_SPACE
+
+Program :: NL* GlobalProgram ThreadLocalProgram
+
+GlobalProgram :: GlobalStmt* EndGlobalStmt
+
+GlobalStmt :: VariableDeclarationStmt | AssignmentStmt | PauseStmt
+
+EndGlobalStmt :: 'end global' NL+
+
+VariableDeclarationStmt :: {VariableDeclaration} VariableType SPACE VariableName (LIT_COMMA VariableName)* NL+ 
+                         | {VariableDefinition} VariableType SPACE VariableName LIT_EQ ValueExpr NL+
+
+VariableType :: 'register' 
+              | 'register[]'
+
+VariableName :: SMALL LETTER* 
+
+ThreadLocalProgram :: ThreadLocalStmt*
+
+ThreadLocalStmt :: ThreadLocalVariableStmt 
+                 | AssignmentStmt
+                 | PauseStmt
+
+PauseStmt :: 'pause'
+
+ThreadLocalVariableStmt :: 'thread' SPACE VariableDeclarationStmt
+
+ValueExpr :: SelectExpr
+           | {DerefIndividualWords} '@'VariableName'[]'
+           | {DerefVariable} '@'VariableName
+           | {DerefConstant} '@'IntConstantExpr
+           | BinOpExpr
+           | MultAddExpr
+           | {Variable} VariableName ('['IntConstantExpr']')?
+           | IntConstantExpr 
+
+AssignmentStmt :: {LoadVariable} VariableName LIT_EQ ValueExpr NL+ 
+                | {StoreMemory} '@'VariableName LIT_EQ ValueExpr NL+
+
+IntConstantExpr :: {NumberStringHex} '0x' HEX_DIGIT+
+                 | {NumberString} MINUS? DIGIT+ 
+
+
+VarOrConst :: VariableName | IntConstantExpr
+
+BinOpExpr :: VarOrConst LIT_OP VarOrConst
+
+MultAddExpr :: VariableName LIT_MULT VarOrConst LIT_PLUS VarOrConst
+
+SelectExpr :: CondExpr LIT_QU VarOrConst LIT_COLON VarOrConst
+
+CondExpr :: VariableName | VarOrConst LIT_CMP_OP VarOrConst
+
+-----------------------------------------------
+
+Now, let me describe the structure of the program I want you to write. It should have two pieces (1) A parser and (2) A main runner that takes string as input, runs the parser on the string and returns its output.
+
+Let me describe the Parser (1 above). It should
+- Have one dataclass per non-terminal in the grammar
+- If the grammar rule is a product rule (i.e. exactly one right side and no choice operator the |), the corresponding dataclass should be product type
+- If the grammar rule is a sum rule (i.e. it has the choice operator, |), then the corresponding dataclass should be a sum type.
+  - For example `A = {Good} B C | {Best} X Y Z` should result in a dataclass A defined as `A = Good | Best` and additional product type dataclasses for Good (with B and C as members) and Best (with X Y Z) as members.
+  - For Sum types, use a different strategy in data classes instead of typing it `Union`. Instead of `Shape = Union[Square, Rectangle]`, find a way to express it so that `Square` and `Rectangle` will still return true for `instanceof Shape` so that pattern matching is convenient
+- Each dataclass should be named for the non-terminal it represents.
+- Each such product type dataclass should include one member for each the non-terminals from its RHS, excepting for special treatment of some non-terminals.
+  - `SPACE`, `OPT_SPACE`, `NL` should not result in any new members
+  - For `LIT_OP` and `LIT_CMP_OP`, the corresponding member should have its output trimmed (i.e. remove spaces before and after)
+  - All other non-terminals whose name starts with `LIT_` should not result in any new members
+  - Repeated non terminals should become lists. For example, if the product type is `MyProgram :: X SPACE Y Z* X NL`, the corresponding product type should contain members typed X, Y, list[Z] and X. The names of the members should not conflict. So this example would perhaps have members named x1, y, zs, x2
+- In the parser's result, use the index into the string, `next_index` instead of materializing the `remaining` string that hasn't matched
+- The parser should be in the parser combinator style and avoid functions per non-terminal
+- Make the code compact
+  - For unary parser combinators like `Map`, prefer a postfix style like `parser.map(lambda ...)` rather than `Map(parser, fn)`
+  - For combinators `+`, `*`, `?` use their english names `plus`, `star`, `opt` in postfix style. For e.g., use `parser.star()` instead of `star(parser)`
+  - For n-ary combinators, prefer an operator symbol over explicit infix notation. For example use `A | B | C` instead of `Choice(A, B, C)`
+  - For sequence combinator, don't use any notation, just use `seq(parser1, parser2, parser3, ...)` syntax
+- When combining parsers across multiple lines, put the combining operator on the next line (prefix) as opposed to the same line (suffix)
+- Minimize the use of lazy parsers - that is, only use when truly required (for e.g. handling recursive parsers)
+- When a Parser doesn't match, don't raise an Exception, instead return a sentinel (like None)
+- Use python style (lower snake case) names for parser variables corresponding to non-terminals (whether defined inline or not). Don't shorten these names at the expense of clarity.
+
+Let me describe the main runner (2 above). It should do the following:
+- Create a function to with two args: a parser and a string. This parser runs on the content and produces an output
+  - If the run throws, print the stack trace, otherwise print the dataclass corresponding to the root node
+  - Print the unmatched content (truncated to 100 chars) regardless of parsing throws
+- If a commandline arg is given, treat it as input file and read that file to obtain a string, `content` and run the root node's parser on that content. 
+- If a commandline arg is not given, create a sample input string inline and a parser-typed variable and run that parser on the content. This parser should default to the root node. But, being inline, I can  change the parser and content inline for experimentation.

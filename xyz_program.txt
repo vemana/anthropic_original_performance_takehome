@@ -1,0 +1,479 @@
+
+register tree_values_ptr = @4
+register inp_values_ptr = @6
+register vlen = 8
+register[] treevals = @tree_values_ptr
+
+register[] t0 = treevals[0]
+register[] t1 = treevals[1]
+register[] t2 = treevals[2]
+register[] t3 = treevals[3]
+register[] t4 = treevals[4]
+register[] t5 = treevals[5]
+register[] t6 = treevals[6]
+
+end global
+
+# Compiler fills in implicit registers tidx and tidxlen
+# Declare if you want to use them
+thread register tidxlen
+
+# Work registers
+thread register[] v, idx, t, p1, p2
+
+thread register valoffset
+# valoffset = tidx * vlen
+# valoffset = valoffset + inp_values_ptr
+valoffset = tidxlen + inp_values_ptr
+v = @valoffset
+
+
+######### Round 0 #########
+v = v ^ t0
+
+
+v = v * 4097 + 0x7ED55D16
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+
+v = v * 33 + 0x165667B1 
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+v = v * 9 + 0xFD7046C5 
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+idx = v % 2
+
+######### Round 1 #########
+t = idx ? t2 : t1
+v = v ^ t
+
+
+v = v * 4097 + 0x7ED55D16
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+
+v = v * 33 + 0x165667B1 
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+v = v * 9 + 0xFD7046C5 
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+
+######### Round 2 #########
+t = p1 ? t4 : t3
+p2 = p1 ? t6 : t5
+t = idx ? p2 : t
+idx = idx - -5
+idx = idx * 2 + p1
+v = v ^ t
+
+
+v = v * 4097 + 0x7ED55D16
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+
+v = v * 33 + 0x165667B1 
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+v = v * 9 + 0xFD7046C5 
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+# p1 = p1 ? -5 : -6
+p1 = p1 - 6
+idx = idx * 2 + p1
+
+######### Round 3 #########
+t = @idx[]
+v = v ^ t
+
+
+v = v * 4097 + 0x7ED55D16
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+
+v = v * 33 + 0x165667B1 
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+v = v * 9 + 0xFD7046C5 
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+# p1 = p1 ? -5 : -6
+p1 = p1 - 6
+idx = idx * 2 + p1
+
+######### Round 4 #########
+t = @idx[]
+v = v ^ t
+
+
+v = v * 4097 + 0x7ED55D16
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+
+v = v * 33 + 0x165667B1 
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+v = v * 9 + 0xFD7046C5 
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+# p1 = p1 ? -5 : -6
+p1 = p1 - 6
+idx = idx * 2 + p1
+
+######### Round 5 #########
+t = @idx[]
+v = v ^ t
+
+
+v = v * 4097 + 0x7ED55D16
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+
+v = v * 33 + 0x165667B1 
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+v = v * 9 + 0xFD7046C5 
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+# p1 = p1 ? -5 : -6
+p1 = p1 - 6
+idx = idx * 2 + p1
+
+######### Round 6 #########
+t = @idx[]
+v = v ^ t
+
+
+v = v * 4097 + 0x7ED55D16
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+
+v = v * 33 + 0x165667B1 
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+v = v * 9 + 0xFD7046C5 
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+# p1 = p1 ? -5 : -6
+p1 = p1 - 6
+idx = idx * 2 + p1
+
+######### Round 7 #########
+t = @idx[]
+v = v ^ t
+
+
+v = v * 4097 + 0x7ED55D16
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+
+v = v * 33 + 0x165667B1 
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+v = v * 9 + 0xFD7046C5 
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+# p1 = p1 ? -5 : -6
+p1 = p1 - 6
+idx = idx * 2 + p1
+
+######### Round 8 #########
+t = @idx[]
+v = v ^ t
+
+
+v = v * 4097 + 0x7ED55D16
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+
+v = v * 33 + 0x165667B1 
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+v = v * 9 + 0xFD7046C5 
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+# p1 = p1 ? -5 : -6
+p1 = p1 - 6
+idx = idx * 2 + p1
+
+######### Round 9 #########
+t = @idx[]
+v = v ^ t
+
+
+v = v * 4097 + 0x7ED55D16
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+
+v = v * 33 + 0x165667B1 
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+v = v * 9 + 0xFD7046C5 
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+# p1 = p1 ? -5 : -6
+p1 = p1 - 6
+idx = idx * 2 + p1
+
+######### Round 10 #########
+t = @idx[]
+v = v ^ t
+
+
+v = v * 4097 + 0x7ED55D16
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+
+v = v * 33 + 0x165667B1 
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+v = v * 9 + 0xFD7046C5 
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+######### Round 11 #########
+v = v ^ t0
+
+
+v = v * 4097 + 0x7ED55D16
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+
+v = v * 33 + 0x165667B1 
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+v = v * 9 + 0xFD7046C5 
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+idx = v % 2
+
+######### Round 12 #########
+t = idx ? t2 : t1
+v = v ^ t
+
+
+v = v * 4097 + 0x7ED55D16
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+
+v = v * 33 + 0x165667B1 
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+v = v * 9 + 0xFD7046C5 
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+
+######### Round 13 #########
+t = p1 ? t4 : t3
+p2 = p1 ? t6 : t5
+t = idx ? p2 : t
+idx = idx - -5
+idx = idx * 2 + p1
+v = v ^ t
+
+
+v = v * 4097 + 0x7ED55D16
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+
+v = v * 33 + 0x165667B1 
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+v = v * 9 + 0xFD7046C5 
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+# p1 = p1 ? -5 : -6
+p1 = p1 - 6
+idx = idx * 2 + p1
+
+######### Round 14 #########
+t = @idx[]
+v = v ^ t
+
+
+v = v * 4097 + 0x7ED55D16
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+
+v = v * 33 + 0x165667B1 
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+v = v * 9 + 0xFD7046C5 
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+p1 = v % 2
+# p1 = p1 ? -5 : -6
+p1 = p1 - 6
+idx = idx * 2 + p1
+
+######### Round 15 #########
+t = @idx[]
+v = v ^ t
+
+
+v = v * 4097 + 0x7ED55D16
+
+p1 = v ^ 0xC761C23C
+p2 = v >> 19
+v = p1 ^ p2
+
+
+v = v * 33 + 0x165667B1 
+
+p1 = v + 0xD3A2646C
+p2 = v << 9
+v = p1 ^ p2
+
+v = v * 9 + 0xFD7046C5 
+
+p1 = v ^ 0xB55A4F09
+p2 = v >> 16
+v = p1 ^ p2
+
+@valoffset = v

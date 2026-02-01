@@ -26,6 +26,8 @@ from instr_graph_model import (
         )
 from program_to_graph import estimate_max_conc_threads, program_to_work
 from input_to_program import input_to_program
+from util import pretty_print_map
+from display import Display
 
 
 class KernelBuilder:
@@ -61,21 +63,58 @@ def optimize(program: Program, num_threads: int, conc_threads: int) -> List[Seri
 
 
 def work_to_instrs(work: Work) -> list[SerializedInstruction]:
-#     work.print()
+    work.print()
     insts = []
     while work.have_more():
         insts.append(work.take())
     return insts
 
 
+def __arithmetic_instr_count(instructions):
+    arith_count = 0
+    for idx, group in enumerate(instructions):
+        for engine, ilist in group.items():
+            if engine != EX_VALU and engine != EX_ALU:
+                continue
+            for inst in ilist:
+                opcode = inst[0]
+                size = VLEN if engine == EX_VALU else 1
+                arith_count += size
+
+    return arith_count
+
+
 def stats_for_nerds(instrs, ss):
-    ss.print()
-    stats = defaultdict(int)
-    def add_stat(group):
+    histogram = defaultdict(int)
+    inst_count = defaultdict(int)
+    engine_count = defaultdict(int)
+
+    def add_stat(group, idx):
+
         for engine, insts in group.items():
-            stats[(engine, len(insts))] += 1
-    for inst in instrs:
-        add_stat(inst)
-    print("\n".join([f"{key[0]}, {key[1]} --> {value}" for key, value in sorted(stats.items())]))
+            histogram[(engine, len(insts))] += 1
+
+        for engine, insts in group.items():
+            for inst in insts:
+                inst_count[inst[0]] += 1
+
+        for engine, insts in group.items():
+            engine_count[engine] += len(insts)
+
+
+    for idx, inst in enumerate(instrs):
+        add_stat(inst, idx)
+
+    pretty_print_map(engine_count, "Instruction Count per engine")
+    pretty_print_map(inst_count, "Count per instruction")
+    pretty_print_map(histogram, "Histogram of engine slot usage")
+    arithcount = __arithmetic_instr_count(instrs)
+    arithcount_alu_intensity = arithcount / (SLOT_LIMITS[EX_VALU] * VLEN + SLOT_LIMITS[EX_ALU])
+    arithcount_alu_flow_intensity = arithcount / (SLOT_LIMITS[EX_VALU] * VLEN + SLOT_LIMITS[EX_ALU] + SLOT_LIMITS[EX_FLOW])
+    print(f"Arithcount = {arithcount}"
+          , f"alu_intensity = {arithcount_alu_intensity}"
+          , f"alu_flow_intensity = {arithcount_alu_flow_intensity}"
+          , sep='\n')
+    ss.print()
 
 

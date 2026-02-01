@@ -1,21 +1,24 @@
 from parser import Program, program as parser
 
 def input_to_program(height:int, batch_size:int, rounds:int) -> str: 
-    return parser.parse(input_to_program_text(height, batch_size, rounds)).value
+    text = input_to_program_text(height, batch_size, rounds)
+    parsed = parser.parse(text)
+    if parsed.next_index != len(text):
+      print(f"Remaining text: {text[parsed.next_index:]}")
+      raise Exception("Failed to parse the whole program")
+    return parsed.value
 
 global_preamble="""
 register tree_values_ptr = @4
-register inp_idx_ptr = @5
 register inp_values_ptr = @6
 register vlen = 8
 register[] treevals = @tree_values_ptr
 
-#register[] t0 = treevals[0]
-#register[] t1 = treevals[1]
-#register[] t2 = treevals[2]
-#register[] t3 = treevals[3]
-#register[] t4 = treevals[4]
-
+register[] t0 = treevals[0]
+register[] t1 = treevals[1]
+register[] t2 = treevals[2]
+register[] t3 = treevals[3]
+register[] t4 = treevals[4]
 register[] t5 = treevals[5]
 register[] t6 = treevals[6]
 
@@ -23,83 +26,75 @@ end global
 """
 
 thread_preamble="""
-# tidx is an implicit register filled by compiler
-thread register tidx
+# Compiler fills in implicit registers tidx and tidxlen
+# Declare if you want to use them
+thread register tidxlen
 
 # Work registers
 thread register[] v, idx, t, p1, p2
 
 thread register valoffset
-valoffset = tidx * vlen
-valoffset = valoffset + inp_values_ptr
+# valoffset = tidx * vlen
+# valoffset = valoffset + inp_values_ptr
+valoffset = tidxlen + inp_values_ptr
 v = @valoffset
 
-#thread register idxoffset
-#idxoffset = tidx * vlen
-#idxoffset = idxoffset + inp_idx_ptr
 """
 
 level0_header = """
-t = treevals[0]
+v = v ^ t0
 """
 
 level0_footer = """
-p1 = v % 2
-idx = p1 ? 9 : 8
+idx = v % 2
 """
 
 level1_header = """
-#t = p1 ? t2 : t1
+t = idx ? t2 : t1
+v = v ^ t
+"""
 
-p2 = treevals[2]
-t = treevals[1]
-t = p1 ? p2 : t
+level1_footer="""
+p1 = v % 2
 """
 
 level2_header = """
-#p1 = idx < 11 ? t3 : t4
-#p2 = 12 < idx ? t6 : t5
-#t = idx < 12 ? p1 : p2
-
-t = treevals[3]
-p2 = treevals[4]
-p1 = idx < 11 ? t : p2
-p2 = 12 < idx ? t6 : t5
-t = idx < 12 ? p1 : p2
+t = p1 ? t4 : t3
+p2 = p1 ? t6 : t5
+t = idx ? p2 : t
+idx = idx - -5
+idx = idx * 2 + p1
+v = v ^ t
 """
 
 level3_header = """
 t = @idx[]
+v = v ^ t
 """
 
 level_footer="""
 p1 = v % 2
-p1 = p1 ? -5 : -6
+# p1 = p1 ? -5 : -6
+p1 = p1 - 6
 idx = idx * 2 + p1
 """
 
 computation="""
-v = v ^ t
 
-p1 = v + 0x7ED55D16
-p2 = v << 12
-v = p1 + p2
+v = v * 4097 + 0x7ED55D16
 
 p1 = v ^ 0xC761C23C
 p2 = v >> 19
 v = p1 ^ p2
 
-p1 = v + 0x165667B1
-p2 = v << 5
-v = p1 + p2
+
+v = v * 33 + 0x165667B1 
 
 p1 = v + 0xD3A2646C
 p2 = v << 9
 v = p1 ^ p2
 
-p1 = v + 0xFD7046C5
-p2 = v << 3
-v = p1 + p2
+v = v * 9 + 0xFD7046C5 
 
 p1 = v ^ 0xB55A4F09
 p2 = v >> 16
@@ -134,25 +129,55 @@ def input_to_program_text(height, batch_size, rounds) -> str:
         if level == 0:
           ret += level0_header
           ret += computation
-          if level != height:
-            ret += level0_footer
         elif level == 1:
           ret += level1_header
           ret += computation
-          if level != height:
-            ret += level_footer
         elif level == 2:
           ret += level2_header
           ret += computation
-          if level != height:
-            ret += level_footer
         else:
           ret += level3_header
           ret += computation
-          if level != height:
-            ret += level_footer
+
+        if level != height and r != rounds - 1:
+          ret += (level0_footer if level == 0 else (level1_footer if level == 1 else level_footer))
 
     ret += footer
-#     with open('/tmp/p3.txt', "w", encoding="utf-8") as file:
-#         file.write(ret) 
+    with open('/tmp/program.txt', "w", encoding="utf-8") as file:
+        file.write(ret) 
     return ret
+
+old_level0_header = """
+t = treevals[0]
+v = v ^ t
+"""
+
+old_level0_footer = """
+p1 = v % 2
+idx = p1 ? 9 : 8
+
+#idx = p1 + 8 # SLOWER
+"""
+
+old_level1_header = """
+p2 = treevals[2]
+t = treevals[1]
+t = p1 ? p2 : t
+v = v ^ t
+"""
+
+old_level_footer="""
+p1 = v % 2
+p1 = p1 ? -5 : -6
+#p1 = p1 - 6
+idx = idx * 2 + p1
+"""
+
+old_level2_header = """
+t = treevals[3]
+p2 = treevals[4]
+p1 = idx < 11 ? t : p2
+p2 = 12 < idx ? t6 : t5
+t = idx < 12 ? p1 : p2
+v = v ^ t
+"""
