@@ -37,7 +37,7 @@ class Range:
     hi: int
 
     def is_empty(self):
-        return hi < lo
+        return self.hi < self.lo
 
     def intersect(self, that: 'Range') -> 'Range':
         return Range(max(self.lo, that.lo), min(self.hi, that.hi))
@@ -163,6 +163,10 @@ class LogicalRegister(LogicalOp):
         return varmeta.constant_value
 
 
+    def overlaps(self, that, ss: ScratchSpace, slot: int):
+        return not self.range(ss, slot).intersect(that.range(ss, slot)).is_empty()
+
+
     def compact_str(self):
         if self.is_vector:
             return f"{self.name:>19}[ ]"
@@ -239,8 +243,7 @@ class InstrMeta:
             return (-1, 0)
 
         if not hasattr(self, 'checkpoints'):
-            self.checkpoints = [331, 10000]
-            self.checkpoints = [330, 10000]
+            self.checkpoints = [292, 10000]
 
         for idx, c in enumerate(self.checkpoints):
             if self.instid_in_thread < c:
@@ -617,10 +620,63 @@ class GreedyWorkPacker:
         self.free.extend(nmetas)
 
 
+    def __split_one_free_multiply_add(self, imeta):
+        regs = imeta.registers(self.ss)
+        assert imeta.lin.inst[0] == "multiply_add"
+        assert len(regs) == 4
+        for i in range(0, 4):
+            assert regs[i].offset == 0
+
+        dest,a,b,c = regs[0], regs[1], regs[2], regs[3]
+        # dest = a*b + c
+
+        if dest.overlaps(c, self.ss, work_slot_of(imeta.tid, self.conc_threads)):
+            assert False
+            return False
+
+        clen = len(self.imetas)
+
+        # dest = a * b
+        first =  [InstrMeta(
+                    instid = imeta.instid
+                    , lin = LI(EX_ALU , ('*'
+                                   , dest.scalar_at_offset(i)
+                                   , a.scalar_at_offset(i)
+                                   , b.scalar_at_offset(i)))
+                    , tid = imeta.tid
+                    , instid_in_thread = imeta.instid_in_thread
+                    , after = MinHeap([clen + i])) for i in range(0, VLEN)]
+
+        # dest = dest + c
+        second =  [InstrMeta(
+                    instid = clen + i
+                    , lin = LI(EX_ALU , ('+'
+                                   , dest.scalar_at_offset(i)
+                                   , dest.scalar_at_offset(i)
+                                   , c.scalar_at_offset(i)))
+                    , tid = imeta.tid
+                    , instid_in_thread = imeta.instid_in_thread
+                    , after = imeta.after) for i in range(0, VLEN)]
+
+        assert len(second) == VLEN
+
+        self.imetas.extend(second)
+        self.incount.extend([0] * VLEN)
+        for idx in range(clen, len(self.imetas)):
+            self.incount[idx] = 1
+
+        for idx in imeta.after:
+            self.incount[idx] += (VLEN - 1)
+        self.free.remove(imeta)
+        self.free.extend(first)
+        return False
+
+
     def __split_valu_into_alu(self, alu_slots, already_taken_imetas):
         to_split = (alu_slots + VLEN - 1) // VLEN
 
         so_far = 0
+        mul_adds = []
         for imeta in self.free:
             if so_far >= to_split:
                 break
@@ -631,13 +687,24 @@ class GreedyWorkPacker:
             if imeta in already_taken_imetas:
                 continue
 
-            if len(imeta.lin.inst[0]) > 5:
-                # Only support +, -, ... arithmetic operators for splitting
-                # Can't split vbroadcast and multiply_add
+            # Split non multiply-adds preferentially
+            opcode = imeta.lin.inst[0]
+            if opcode == "multiply_add":
+                mul_adds.append(imeta)
                 continue
+            elif len(imeta.lin.inst[0]) > 5:
+                # Only support +, -, ... arithmetic operators for splitting
+                # Can't split vbroadcast
+                continue
+            else:
+                self.__split_one_free_valu_to_alu(imeta)
+                so_far += 1
 
-            so_far += 1
-            self.__split_one_free_valu_to_alu(imeta)
+        for imeta in mul_adds:
+            if so_far >= to_split:
+                break
+            if self.__split_one_free_multiply_add(imeta):
+                so_far += 1
 
 
     def __split_one_vector_imm_add(self, imeta):
@@ -750,6 +817,8 @@ class GreedyWorkPacker:
         print('-'*200)
         print(f'ALL INSTRUCTIONS BELOW, {len([x for x in self.imetas if x.tid < 1])}')
         print(*[x.compact_str() for x in self.imetas if x.tid < 1], sep='\n')
+        print("\n")
+        print(*[x.compact_str() for x in self.imetas if x.tid == self.num_threads - 1], sep='\n')
 
 
     def have_more(self):

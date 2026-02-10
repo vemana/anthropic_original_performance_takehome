@@ -41,8 +41,11 @@ class InsertionOrderedSet:
 
 from sortedcontainers import SortedSet
 class MinHeap:
-    def __init__(self):
-        self.array = SortedSet([])
+#     def __init__(self):
+#         self.array = SortedSet([])
+
+    def __init__(self, array = []):
+        self.array = SortedSet(array)
 #         self.array = []
 
     def __iter__(self):

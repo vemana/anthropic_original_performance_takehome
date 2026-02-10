@@ -1,7 +1,6 @@
 
 register tree_values_ptr = @4
 register inp_values_ptr = @6
-register vlen = 8
 register[] treevals = @tree_values_ptr
 register t0 = treevals[0]
 register t1 = treevals[1]
@@ -36,21 +35,23 @@ p1 = t0
 v = v ^ p1
 
 
+# Stage 1
 v = v * 4097 + 0x7ED55D16
 
+# Stage 2
 p1 = v ^ 0xC761C23C
 p2 = v >> 19
 v = p1 ^ p2
 
-
-v = v * 33 + 0x165667B1 
-
-p1 = v + 0xD3A2646C
-p2 = v << 9
+# Fuse stages 3 and 4
+p1 = v * 33 + 3925396509
+p2 = v * 16896 +2899272192 
 v = p1 ^ p2
 
+# Stage 5
 v = v * 9 + 0xFD7046C5 
 
+# Stage 6
 p1 = v ^ 0xB55A4F09
 p2 = v >> 16
 v = p1 ^ p2
@@ -64,21 +65,23 @@ t = idx ? p2 : p1
 v = v ^ t
 
 
+# Stage 1
 v = v * 4097 + 0x7ED55D16
 
+# Stage 2
 p1 = v ^ 0xC761C23C
 p2 = v >> 19
 v = p1 ^ p2
 
-
-v = v * 33 + 0x165667B1 
-
-p1 = v + 0xD3A2646C
-p2 = v << 9
+# Fuse stages 3 and 4
+p1 = v * 33 + 3925396509
+p2 = v * 16896 +2899272192 
 v = p1 ^ p2
 
+# Stage 5
 v = v * 9 + 0xFD7046C5 
 
+# Stage 6
 p1 = v ^ 0xB55A4F09
 p2 = v >> 16
 v = p1 ^ p2
@@ -94,21 +97,23 @@ idx = idx * 2 + p1
 v = v ^ t
 
 
+# Stage 1
 v = v * 4097 + 0x7ED55D16
 
+# Stage 2
 p1 = v ^ 0xC761C23C
 p2 = v >> 19
 v = p1 ^ p2
 
-
-v = v * 33 + 0x165667B1 
-
-p1 = v + 0xD3A2646C
-p2 = v << 9
+# Fuse stages 3 and 4
+p1 = v * 33 + 3925396509
+p2 = v * 16896 +2899272192 
 v = p1 ^ p2
 
+# Stage 5
 v = v * 9 + 0xFD7046C5 
 
+# Stage 6
 p1 = v ^ 0xB55A4F09
 p2 = v >> 16
 v = p1 ^ p2
@@ -119,54 +124,109 @@ p2 = p1 ? -5 : -6
 idx = idx * 2 + p2
 
 ######### Round 3 #########
+    iftid range(0, 28)
+      
+idx = idx - 16
+idx = idx + 2
+# idx in [0, 7]
+
+t = treevals[7]
+
+p1 = treevals[0]
+t = idx ? t : p1
+
+p1 = treevals[1]
+idx = idx - 1
+t = idx ? t : p1
+
+p1 = treevals[2]
+idx = idx - 1
+t = idx ? t : p1
+
+p1 = treevals[3]
+idx = idx - 1
+t = idx ? t : p1
+
+p1 = treevals[4]
+idx = idx - 1
+t = idx ? t : p1
+
+p1 = treevals[5]
+idx = idx - 1
+t = idx ? t : p1
+
+p1 = treevals[6]
+idx = idx - 1
+t = idx ? t : p1
+
+v = v ^ t
+
+    elsetid
+      
 t = @idx[]
 v = v ^ t
 
+    endiftid
+    
 
+# Stage 1
 v = v * 4097 + 0x7ED55D16
 
+# Stage 2
 p1 = v ^ 0xC761C23C
 p2 = v >> 19
 v = p1 ^ p2
 
-
-v = v * 33 + 0x165667B1 
-
-p1 = v + 0xD3A2646C
-p2 = v << 9
+# Fuse stages 3 and 4
+p1 = v * 33 + 3925396509
+p2 = v * 16896 +2899272192 
 v = p1 ^ p2
 
+# Stage 5
 v = v * 9 + 0xFD7046C5 
 
+# Stage 6
 p1 = v ^ 0xB55A4F09
 p2 = v >> 16
 v = p1 ^ p2
 
+    iftid range(0, 28)
+      
+p1 = v % 2
+idx = idx + 17
+idx = idx * 2 + p1
+
+    elsetid
+      
 p1 = v % 2
 p2 = p1 ? -5 : -6
 # p2 = p1 - 6
 idx = idx * 2 + p2
 
+    endiftid
+    
 ######### Round 4 #########
 t = @idx[]
 v = v ^ t
 
 
+# Stage 1
 v = v * 4097 + 0x7ED55D16
 
+# Stage 2
 p1 = v ^ 0xC761C23C
 p2 = v >> 19
 v = p1 ^ p2
 
-
-v = v * 33 + 0x165667B1 
-
-p1 = v + 0xD3A2646C
-p2 = v << 9
+# Fuse stages 3 and 4
+p1 = v * 33 + 3925396509
+p2 = v * 16896 +2899272192 
 v = p1 ^ p2
 
+# Stage 5
 v = v * 9 + 0xFD7046C5 
 
+# Stage 6
 p1 = v ^ 0xB55A4F09
 p2 = v >> 16
 v = p1 ^ p2
@@ -181,21 +241,23 @@ t = @idx[]
 v = v ^ t
 
 
+# Stage 1
 v = v * 4097 + 0x7ED55D16
 
+# Stage 2
 p1 = v ^ 0xC761C23C
 p2 = v >> 19
 v = p1 ^ p2
 
-
-v = v * 33 + 0x165667B1 
-
-p1 = v + 0xD3A2646C
-p2 = v << 9
+# Fuse stages 3 and 4
+p1 = v * 33 + 3925396509
+p2 = v * 16896 +2899272192 
 v = p1 ^ p2
 
+# Stage 5
 v = v * 9 + 0xFD7046C5 
 
+# Stage 6
 p1 = v ^ 0xB55A4F09
 p2 = v >> 16
 v = p1 ^ p2
@@ -210,21 +272,23 @@ t = @idx[]
 v = v ^ t
 
 
+# Stage 1
 v = v * 4097 + 0x7ED55D16
 
+# Stage 2
 p1 = v ^ 0xC761C23C
 p2 = v >> 19
 v = p1 ^ p2
 
-
-v = v * 33 + 0x165667B1 
-
-p1 = v + 0xD3A2646C
-p2 = v << 9
+# Fuse stages 3 and 4
+p1 = v * 33 + 3925396509
+p2 = v * 16896 +2899272192 
 v = p1 ^ p2
 
+# Stage 5
 v = v * 9 + 0xFD7046C5 
 
+# Stage 6
 p1 = v ^ 0xB55A4F09
 p2 = v >> 16
 v = p1 ^ p2
@@ -239,21 +303,23 @@ t = @idx[]
 v = v ^ t
 
 
+# Stage 1
 v = v * 4097 + 0x7ED55D16
 
+# Stage 2
 p1 = v ^ 0xC761C23C
 p2 = v >> 19
 v = p1 ^ p2
 
-
-v = v * 33 + 0x165667B1 
-
-p1 = v + 0xD3A2646C
-p2 = v << 9
+# Fuse stages 3 and 4
+p1 = v * 33 + 3925396509
+p2 = v * 16896 +2899272192 
 v = p1 ^ p2
 
+# Stage 5
 v = v * 9 + 0xFD7046C5 
 
+# Stage 6
 p1 = v ^ 0xB55A4F09
 p2 = v >> 16
 v = p1 ^ p2
@@ -268,21 +334,23 @@ t = @idx[]
 v = v ^ t
 
 
+# Stage 1
 v = v * 4097 + 0x7ED55D16
 
+# Stage 2
 p1 = v ^ 0xC761C23C
 p2 = v >> 19
 v = p1 ^ p2
 
-
-v = v * 33 + 0x165667B1 
-
-p1 = v + 0xD3A2646C
-p2 = v << 9
+# Fuse stages 3 and 4
+p1 = v * 33 + 3925396509
+p2 = v * 16896 +2899272192 
 v = p1 ^ p2
 
+# Stage 5
 v = v * 9 + 0xFD7046C5 
 
+# Stage 6
 p1 = v ^ 0xB55A4F09
 p2 = v >> 16
 v = p1 ^ p2
@@ -297,21 +365,23 @@ t = @idx[]
 v = v ^ t
 
 
+# Stage 1
 v = v * 4097 + 0x7ED55D16
 
+# Stage 2
 p1 = v ^ 0xC761C23C
 p2 = v >> 19
 v = p1 ^ p2
 
-
-v = v * 33 + 0x165667B1 
-
-p1 = v + 0xD3A2646C
-p2 = v << 9
+# Fuse stages 3 and 4
+p1 = v * 33 + 3925396509
+p2 = v * 16896 +2899272192 
 v = p1 ^ p2
 
+# Stage 5
 v = v * 9 + 0xFD7046C5 
 
+# Stage 6
 p1 = v ^ 0xB55A4F09
 p2 = v >> 16
 v = p1 ^ p2
@@ -326,21 +396,23 @@ t = @idx[]
 v = v ^ t
 
 
+# Stage 1
 v = v * 4097 + 0x7ED55D16
 
+# Stage 2
 p1 = v ^ 0xC761C23C
 p2 = v >> 19
 v = p1 ^ p2
 
-
-v = v * 33 + 0x165667B1 
-
-p1 = v + 0xD3A2646C
-p2 = v << 9
+# Fuse stages 3 and 4
+p1 = v * 33 + 3925396509
+p2 = v * 16896 +2899272192 
 v = p1 ^ p2
 
+# Stage 5
 v = v * 9 + 0xFD7046C5 
 
+# Stage 6
 p1 = v ^ 0xB55A4F09
 p2 = v >> 16
 v = p1 ^ p2
@@ -350,21 +422,23 @@ p1 = t0
 v = v ^ p1
 
 
+# Stage 1
 v = v * 4097 + 0x7ED55D16
 
+# Stage 2
 p1 = v ^ 0xC761C23C
 p2 = v >> 19
 v = p1 ^ p2
 
-
-v = v * 33 + 0x165667B1 
-
-p1 = v + 0xD3A2646C
-p2 = v << 9
+# Fuse stages 3 and 4
+p1 = v * 33 + 3925396509
+p2 = v * 16896 +2899272192 
 v = p1 ^ p2
 
+# Stage 5
 v = v * 9 + 0xFD7046C5 
 
+# Stage 6
 p1 = v ^ 0xB55A4F09
 p2 = v >> 16
 v = p1 ^ p2
@@ -378,21 +452,23 @@ t = idx ? p2 : p1
 v = v ^ t
 
 
+# Stage 1
 v = v * 4097 + 0x7ED55D16
 
+# Stage 2
 p1 = v ^ 0xC761C23C
 p2 = v >> 19
 v = p1 ^ p2
 
-
-v = v * 33 + 0x165667B1 
-
-p1 = v + 0xD3A2646C
-p2 = v << 9
+# Fuse stages 3 and 4
+p1 = v * 33 + 3925396509
+p2 = v * 16896 +2899272192 
 v = p1 ^ p2
 
+# Stage 5
 v = v * 9 + 0xFD7046C5 
 
+# Stage 6
 p1 = v ^ 0xB55A4F09
 p2 = v >> 16
 v = p1 ^ p2
@@ -408,21 +484,23 @@ idx = idx * 2 + p1
 v = v ^ t
 
 
+# Stage 1
 v = v * 4097 + 0x7ED55D16
 
+# Stage 2
 p1 = v ^ 0xC761C23C
 p2 = v >> 19
 v = p1 ^ p2
 
-
-v = v * 33 + 0x165667B1 
-
-p1 = v + 0xD3A2646C
-p2 = v << 9
+# Fuse stages 3 and 4
+p1 = v * 33 + 3925396509
+p2 = v * 16896 +2899272192 
 v = p1 ^ p2
 
+# Stage 5
 v = v * 9 + 0xFD7046C5 
 
+# Stage 6
 p1 = v ^ 0xB55A4F09
 p2 = v >> 16
 v = p1 ^ p2
@@ -433,125 +511,109 @@ p2 = p1 ? -5 : -6
 idx = idx * 2 + p2
 
 ######### Round 14 #########
-iftid range(0, 29)
-  
-idx = idx - 14
+    iftid range(0, 28)
+      
+idx = idx - 16
+idx = idx + 2
 # idx in [0, 7]
 
-t = 0
+t = treevals[7]
 
 p1 = treevals[0]
-p2 = 0
-p2 = idx == p2
-# t = p1 * p2 + t
-t = p2 ? p1 : t
+t = idx ? t : p1
 
 p1 = treevals[1]
-p2 = 1
-p2 = idx == p2
-# t = p1 * p2 + t
-t = p2 ? p1 : t
+idx = idx - 1
+t = idx ? t : p1
 
 p1 = treevals[2]
-p2 = 2
-p2 = idx == p2
-# t = p1 * p2 + t
-t = p2 ? p1 : t
+idx = idx - 1
+t = idx ? t : p1
 
 p1 = treevals[3]
-p2 = 3
-p2 = idx == p2
-# t = p1 * p2 + t
-t = p2 ? p1 : t
+idx = idx - 1
+t = idx ? t : p1
 
 p1 = treevals[4]
-p2 = 4
-p2 = idx == p2
-# t = p1 * p2 + t
-t = p2 ? p1 : t
+idx = idx - 1
+t = idx ? t : p1
 
 p1 = treevals[5]
-p2 = 5
-p2 = idx == p2
-# t = p1 * p2 + t
-t = p2 ? p1 : t
+idx = idx - 1
+t = idx ? t : p1
 
 p1 = treevals[6]
-p2 = 6
-p2 = idx == p2
-# t = p1 * p2 + t
-t = p2 ? p1 : t
-
-p1 = treevals[7]
-p2 = 7
-p2 = idx == p2
-# t = p1 * p2 + t
-t = p2 ? p1 : t
+idx = idx - 1
+t = idx ? t : p1
 
 v = v ^ t
 
-elsetid
-  
+    elsetid
+      
 t = @idx[]
 v = v ^ t
 
-endiftid
+    endiftid
+    
 
-
+# Stage 1
 v = v * 4097 + 0x7ED55D16
 
+# Stage 2
 p1 = v ^ 0xC761C23C
 p2 = v >> 19
 v = p1 ^ p2
 
-
-v = v * 33 + 0x165667B1 
-
-p1 = v + 0xD3A2646C
-p2 = v << 9
+# Fuse stages 3 and 4
+p1 = v * 33 + 3925396509
+p2 = v * 16896 +2899272192 
 v = p1 ^ p2
 
+# Stage 5
 v = v * 9 + 0xFD7046C5 
 
+# Stage 6
 p1 = v ^ 0xB55A4F09
 p2 = v >> 16
 v = p1 ^ p2
 
-iftid range(0, 29)
-  
+    iftid range(0, 28)
+      
 p1 = v % 2
-idx = idx + 11
+idx = idx + 17
 idx = idx * 2 + p1
 
-elsetid
-  
+    elsetid
+      
 p1 = v % 2
 p2 = p1 ? -5 : -6
 # p2 = p1 - 6
 idx = idx * 2 + p2
 
-endiftid
-
+    endiftid
+    
 ######### Round 15 #########
 t = @idx[]
 v = v ^ t
 
 
+# Stage 1
 v = v * 4097 + 0x7ED55D16
 
+# Stage 2
 p1 = v ^ 0xC761C23C
 p2 = v >> 19
 v = p1 ^ p2
 
-
-v = v * 33 + 0x165667B1 
-
-p1 = v + 0xD3A2646C
-p2 = v << 9
+# Fuse stages 3 and 4
+p1 = v * 33 + 3925396509
+p2 = v * 16896 +2899272192 
 v = p1 ^ p2
 
+# Stage 5
 v = v * 9 + 0xFD7046C5 
 
+# Stage 6
 p1 = v ^ 0xB55A4F09
 p2 = v >> 16
 v = p1 ^ p2

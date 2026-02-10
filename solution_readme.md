@@ -1,39 +1,38 @@
 # Performance
 
-1253 cycles.
+1174 cycles.
 
 ```text
-[13:17:27] [lsv@vemana]$ git diff origin/main tests/
+[17:30:19] [lsv@vemana]$ git diff origin/main tests/
 
-
-[13:17:29] [lsv@vemana]$ python3 tests/submission_tests.py > /tmp/log.txt && tail -n 20 /tmp/log.txt
+[/data/devel/vemana/anthropic/anthropic_original_performance_takehome]
+[17:30:21] [lsv@vemana]$ python3 tests/submission_tests.py > /tmp/log.txt && tail -n 20 /tmp/log.txt
 .........
 ----------------------------------------------------------------------
-Ran 9 tests in 1.226s
+Ran 9 tests in 1.292s
 
 OK
 Kernel for H = 10, batch_size = 256, rounds = 16
-Using 32 concurrent threads and found 1253 instructions.
-CYCLES:  1253
+Using 32 concurrent threads and found 1174 instructions.
+CYCLES:  1174
 Testing forest_height=10, rounds=16, batch_size=256
-CYCLES:  1253
+CYCLES:  1174
 Testing forest_height=10, rounds=16, batch_size=256
-CYCLES:  1253
+CYCLES:  1174
 Testing forest_height=10, rounds=16, batch_size=256
-CYCLES:  1253
+CYCLES:  1174
 Testing forest_height=10, rounds=16, batch_size=256
-CYCLES:  1253
+CYCLES:  1174
 Testing forest_height=10, rounds=16, batch_size=256
-CYCLES:  1253
+CYCLES:  1174
 Testing forest_height=10, rounds=16, batch_size=256
-CYCLES:  1253
+CYCLES:  1174
 Testing forest_height=10, rounds=16, batch_size=256
-CYCLES:  1253
+CYCLES:  1174
 Testing forest_height=10, rounds=16, batch_size=256
-CYCLES:  1253
-Speedup over baseline:  117.90422984836393
+CYCLES:  1174
+Speedup over baseline:  125.8381601362862
 ```
-
 
 Stats
 
@@ -41,117 +40,108 @@ Stats
 ----------------------------------------------------------------------------------------------------
                                     Instruction Count per engine                                    
 ----------------------------------------------------------------------------------------------------
-alu --> 9467
-flow --> 909
-load --> 2399
+alu --> 12389
+flow --> 1008
+load --> 2178
 store --> 32
-valu --> 7361
+valu --> 6906
 ----------------------------------------------------------------------------------------------------
                                        Count per instruction                                        
 ----------------------------------------------------------------------------------------------------
-% --> 903
-+ --> 1284
-- --> 143
-<< --> 1373
-== --> 232
->> --> 2900
-^ --> 7363
-add_imm --> 130
-const --> 35
-load --> 2330
-multiply_add --> 1920
-vbroadcast --> 707
+% --> 1022
+* --> 1984
++ --> 2481
+- --> 1906
+>> --> 2543
+^ --> 6509
+add_imm --> 96
+const --> 30
+load --> 2114
+multiply_add --> 2184
+vbroadcast --> 663
 vload --> 34
-vselect --> 779
+vselect --> 912
 vstore --> 32
 | --> 3
 ----------------------------------------------------------------------------------------------------
                                    Histogram of engine slot usage                                   
 ----------------------------------------------------------------------------------------------------
-('alu', 0) --> 314
-('alu', 1) --> 2
-('alu', 2) --> 5
-('alu', 3) --> 2
-('alu', 4) --> 123
-('alu', 6) --> 1
-('alu', 7) --> 1
-('alu', 8) --> 177
+('alu', 0) --> 93
+('alu', 1) --> 3
+('alu', 2) --> 4
+('alu', 3) --> 1
+('alu', 4) --> 19
+('alu', 7) --> 2
+('alu', 8) --> 83
 ('alu', 9) --> 1
-('alu', 10) --> 1
-('alu', 11) --> 3
-('alu', 12) --> 623
-('flow', 0) --> 344
-('flow', 1) --> 909
-('load', 0) --> 53
-('load', 1) --> 1
-('load', 2) --> 1199
-('store', 0) --> 1221
+('alu', 10) --> 2
+('alu', 12) --> 966
+('flow', 0) --> 166
+('flow', 1) --> 1008
+('load', 0) --> 85
+('load', 2) --> 1089
+('store', 0) --> 1142
 ('store', 1) --> 32
-('valu', 0) --> 9
-('valu', 1) --> 6
-('valu', 2) --> 6
-('valu', 3) --> 8
-('valu', 4) --> 10
-('valu', 5) --> 5
-('valu', 6) --> 1209
-Arithcount = 68355
-alu_intensity = 1139.25
-alu_flow_intensity = 1120.5737704918033
+('valu', 0) --> 6
+('valu', 1) --> 3
+('valu', 2) --> 9
+('valu', 3) --> 5
+('valu', 4) --> 12
+('valu', 5) --> 12
+('valu', 6) --> 1127
+Arithcount = 67637
+alu_intensity = 1127.2833333333333
+alu_flow_intensity = 1108.8032786885246
 
 ----------------------------------------------------------------------------------------------------
                                         SCRATCH SPACE LAYOUT                                        
 ----------------------------------------------------------------------------------------------------
         ADDRESS       VARIABLE                LENGTH        SLOTS
 ----------------------------------------------------------------------------------------------------
-           1497       _KV_-5                       8            1
-           1505       _KV_-6                       8            1
-           1526       _KV_11                       8            1
-           1513       _KV_14                       8            1
-           1481       _KV_16                       8            1
-           1425       _KV_19                       8            1
-           1489       _KV_2                        8            1
-           1409       _KV_2127912214               8            1
-           1473       _KV_3042594569               8            1
-           1433       _KV_33                       8            1
-           1417       _KV_3345072700               8            1
-           1449       _KV_3550635116               8            1
-           1441       _KV_374761393                8            1
-           1401       _KV_4097                     8            1
-           1465       _KV_4251993797               8            1
+           1504       _KV_-5                       8            1
+           1512       _KV_-6                       8            1
+           1520       _KV_1                        8            1
+           1488       _KV_16                       8            1
+           1448       _KV_16896                    8            1
+           1528       _KV_17                       8            1
+           1424       _KV_19                       8            1
+           1496       _KV_2                        8            1
+           1408       _KV_2127912214               8            1
+           1456       _KV_2899272192               8            1
+           1480       _KV_3042594569               8            1
+           1432       _KV_33                       8            1
+           1416       _KV_3345072700               8            1
+           1440       _KV_3925396509               8            1
+           1400       _KV_4097                     8            1
+           1472       _KV_4251993797               8            1
               0       _KV_64                       8            1
-           1457       _KV_9                        8            1
-           1521       _K_0                         1            1
-           1522       _K_1                         1            1
-           1523       _K_2                         1            1
-           1524       _K_3                         1            1
+           1464       _KV_9                        8            1
               9       _K_4                         1            1
-           1525       _K_5                         1            1
              11       _K_6                         1            1
-             56       _K_7                         1            1
-           1369       a                            1           32
-            345       idx                          8           32
+             55       _K_7                         1            1
+           1368       a                            1           32
+            344       idx                          8           32
              10       inp_values_ptr               1            1
-            857       p1                           8           32
-           1113       p2                           8           32
-            601       t                            8           32
-             21       t0                           1            1
-             22       t1                           1            1
-             23       t2                           1            1
-             24       t3                           8            1
-             32       t4                           8            1
-             40       t5                           8            1
-             48       t6                           8            1
-             57       tidxlen                      1           32
+            856       p1                           8           32
+           1112       p2                           8           32
+            600       t                            8           32
+             20       t0                           1            1
+             21       t1                           1            1
+             22       t2                           1            1
+             23       t3                           8            1
+             31       t4                           8            1
+             39       t5                           8            1
+             47       t6                           8            1
+             56       tidxlen                      1           32
               8       tree_values_ptr              1            1
-             13       treevals                     8            1
-             89       v                            8           32
-             12       vlen                         1            1
+             12       treevals                     8            1
+             88       v                            8           32
 ----------------------------------------------------------------------------------------------------
 Concurrent threads  = 32
 Per thread space    = 42
-Globals space       = 190
-Used space          = 1534
-Free space          = 2
+Globals space       = 192
+Used space          = 1536
+Free space          = 0
 ----------------------------------------------------------------------------------------------------
 ```
 
