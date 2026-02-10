@@ -27,7 +27,7 @@ HEX_DIGIT :: regex([0-9A-Fa-f])
 SMALL :: regex([a-z])
 LETTER :: regex([a-zA-Z0-9_])
 MINUS :: '-'
-OPERATOR :: '*' | '+' | '^' | '>>' | '-' | '<<' | '%'
+OPERATOR :: '*' | '+' | '^' | '>>' | '-' | '<<' | '%' | '=='
 CMP_OPERATOR :: '<' | '=='
 LIT_EQ :: OPT_SPACE '=' OPT_SPACE
 LIT_QU :: OPT_SPACE '?' OPT_SPACE

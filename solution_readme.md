@@ -1,43 +1,133 @@
 # Performance
 
-1345 cycles.
+1265 cycles.
 
 ```text
-[04:27:24] [lsv@vemana]$ python3 tests/submission_tests.py > /tmp/log.txt && tail -n 20 /tmp/log.txt
+[09:07:13] [lsv@vemana]$ git diff origin/main tests/
+
+[09:07:30] [lsv@vemana]$ python3 tests/submission_tests.py > /tmp/log.txt && tail -n 20 /tmp/log.txt
 .........
 ----------------------------------------------------------------------
-Ran 9 tests in 1.334s
+Ran 9 tests in 1.218s
 
 OK
 Kernel for H = 10, batch_size = 256, rounds = 16
-Using 32 concurrent threads and found 1345 instructions.
-CYCLES:  1345
+Using 32 concurrent threads and found 1265 instructions.
+CYCLES:  1265
 Testing forest_height=10, rounds=16, batch_size=256
-CYCLES:  1345
+CYCLES:  1265
 Testing forest_height=10, rounds=16, batch_size=256
-CYCLES:  1345
+CYCLES:  1265
 Testing forest_height=10, rounds=16, batch_size=256
-CYCLES:  1345
+CYCLES:  1265
 Testing forest_height=10, rounds=16, batch_size=256
-CYCLES:  1345
+CYCLES:  1265
 Testing forest_height=10, rounds=16, batch_size=256
-CYCLES:  1345
+CYCLES:  1265
 Testing forest_height=10, rounds=16, batch_size=256
-CYCLES:  1345
+CYCLES:  1265
 Testing forest_height=10, rounds=16, batch_size=256
-CYCLES:  1345
+CYCLES:  1265
 Testing forest_height=10, rounds=16, batch_size=256
-CYCLES:  1345
-Speedup over baseline:  109.83940520446096
-```
-
-```text
-[/data/devel/vemana/anthropic/anthropic_original_performance_takehome]
-[05:30:06] [lsv@vemana]$ git diff origin/main tests/
-
-[/data/devel/vemana/anthropic/anthropic_original_performance_takehome]
+CYCLES:  1265
+Speedup over baseline:  116.78577075098815
 
 ```
+
+
+Stats
+
+```
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Histogram of engine slot usage
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+('alu', 0) --> 323
+('alu', 1) --> 2
+('alu', 2) --> 5
+('alu', 3) --> 2
+('alu', 4) --> 121
+('alu', 8) --> 174
+('alu', 9) --> 1
+('alu', 10) --> 1
+('alu', 11) --> 3
+('alu', 12) --> 633
+('flow', 0) --> 314
+('flow', 1) --> 951
+('load', 0) --> 77
+('load', 1) --> 1
+('load', 2) --> 1187
+('store', 0) --> 1233
+('store', 1) --> 32
+('valu', 0) --> 9
+('valu', 1) --> 11
+('valu', 2) --> 6
+('valu', 3) --> 3
+('valu', 4) --> 5
+('valu', 5) --> 8
+('valu', 6) --> 1223
+Arithcount = 68982
+alu_intensity = 1149.7
+alu_flow_intensity = 1130.8524590163934
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Scratch space variables
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+           1497   _KV_-5                   8        1
+           1505   _KV_-6                   8        1
+           1526   _KV_11                   8        1
+           1513   _KV_14                   8        1
+           1481   _KV_16                   8        1
+           1425   _KV_19                   8        1
+           1489   _KV_2                    8        1
+           1409   _KV_2127912214           8        1
+           1473   _KV_3042594569           8        1
+           1433   _KV_33                   8        1
+           1417   _KV_3345072700           8        1
+           1449   _KV_3550635116           8        1
+           1441   _KV_374761393            8        1
+           1401   _KV_4097                 8        1
+           1465   _KV_4251993797           8        1
+              0   _KV_64                   8        1
+           1457   _KV_9                    8        1
+           1521   _K_0                     1        1
+           1522   _K_1                     1        1
+           1523   _K_2                     1        1
+           1524   _K_3                     1        1
+              9   _K_4                     1        1
+           1525   _K_5                     1        1
+             11   _K_6                     1        1
+             56   _K_7                     1        1
+           1369   a                        1       32
+            345   idx                      8       32
+             10   inp_values_ptr           1        1
+            857   p1                       8       32
+           1113   p2                       8       32
+            601   t                        8       32
+             21   t0                       1        1
+             22   t1                       1        1
+             23   t2                       1        1
+             24   t3                       8        1
+             32   t4                       8        1
+             40   t5                       8        1
+             48   t6                       8        1
+             57   tidxlen                  1       32
+              8   tree_values_ptr          1        1
+             13   treevals                 8        1
+             89   v                        8       32
+             12   vlen                     1        1
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+----------------Scratch Space Stats For Nerds-------------
+Concurrent threads  = 32
+Per thread space    = 42
+Globals space       = 190
+Used space          = 1534
+Free space          = 2
+----------------------------------------------------------------------------------------------------
+Kernel for H = 10, batch_size = 256, rounds = 16
+Using 32 concurrent threads and found 1265 instructions.
+CYCLES:  1265
+Speedup over baseline:  116.78577075098815
+```
+
 
 # Correctness
 

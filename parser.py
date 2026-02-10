@@ -209,7 +209,7 @@ hex_digit = regex(r"[0-9A-Fa-f]")
 small = regex(r"[a-z]")
 letter = regex(r"[a-zA-Z0-9_]")
 minus = lit('-')
-operator = lit('*') | lit('+') | lit('^') | lit('>>') | lit('-') | lit('<<') | lit('%')
+operator = lit('*') | lit('+') | lit('^') | lit('>>') | lit('-') | lit('<<') | lit('%') | lit('==')
 cmp_operator = lit('<') | lit('==')
 
 lit_eq = seq(opt_space, lit('='), opt_space)

@@ -119,10 +119,10 @@ class ScratchSpace:
     def print(self):
         line = '-' * 200    
         print(line)
-        print("Scratch space bariables")
+        print("Scratch space variables")
         print(line)
 
-        for _, var_meta in self.var_meta.items():
+        for _, var_meta in sorted(self.var_meta.items()):
             print(f"{var_meta.addr:15}   {var_meta.name:15} {var_meta.length:10} {var_meta.slots: 8}")
         print(line)
 

@@ -227,29 +227,35 @@ class IRPipeline:
                 assert is_vector, f"condexpr is only supported on vectors. Here, {lname} = {rvalue}"
                 caddr = -1
                 instrs = []
+                reused_lhs = True
 
                 match cond:
                     case str() as name:
                         caddr = read_variable(name, True)
+                        reused_lhs = False
 
                     case CondExpr(left = lvarOrConst, op = op, right = rvarOrConst):
                         l1addr = self.__addr_of(lvarOrConst, True, is_read=True)
                         r1addr = self.__addr_of(rvarOrConst, True, is_read=True)
-
-                        error_message = f"""
-                        A conditional expression like [x = a < b ? x : y] is forbidden since x is used as intermediate for a < b
-                        Here, {lname} occurs on both LHS and in one of the `if` clauses
-                        """
-                        assert l1addr.name != lname, error_message
-                        assert r1addr.name != lname, error_message
                         instrs.append((EX_VALU, (op, write_variable(lname, True), l1addr, r1addr)))
                         caddr = read_variable(lname, True)
+
+                lbranch = self.__addr_of(if_true, True, is_read=True)
+                rbranch = self.__addr_of(if_false, True, is_read=True)
+                if reused_lhs:
+                    error_message = f"""
+                    A conditional expression like [x = a < b ? x : y] is forbidden since x is used as intermediate for a < b
+                    Here, {lname} occurs on both LHS and in one of the `if` clauses
+                    {lname} = {rvalue}
+                    """
+                    assert lbranch.name != lname, error_message
+                    assert rbranch.name != lname, error_message
 
                 instrs.append((EX_FLOW, ("vselect"
                                          , write_variable(lname, True)
                                          , caddr
-                                         , self.__addr_of(if_true, True, is_read=True)
-                                         , self.__addr_of(if_false, True, is_read=True))))
+                                         , lbranch
+                                         , rbranch)))
 
             case IntConstantExpr() as intconst:
                 # lname = constant
@@ -264,14 +270,26 @@ class IRPipeline:
                 # lname = v[constant]
                 rname = v.name
                 ridx = to_int(v.index) if v.index else 0
-                assert is_vector, f"Assignments like `x = y[4]` only support where x is a register[]. Here it was {lname} = {rvalue}"
-                assert 0 <= ridx and ridx < VLEN, f"y[t] is invalid if t is outside [0, 8). Here, t is {ridx}, from expr {rvalue}."
-                instrs = [(EX_VALU, ("vbroadcast"
-                                     , write_variable(lname, True)
-                                     # This is tricky because we are reading a scalar from within a vector
-                                     # So, is_vector (as in whether rname is declared vector) has to be checked
-                                     # But, the actual LogicalRegister should mark it as a scalar read
-                                     , read_scalar_within_vector(rname, ridx)))]
+                rvm = self.ss.var_meta_of(rname)
+                rvector = rvm.is_vector
+
+                if rvector:
+                    assert 0 <= ridx and ridx < VLEN, f"y[t] is invalid if t is outside [0, VLEN). Here, t is {ridx}, from expr {rvalue}."
+                else:
+                    assert ridx == 0, f"{rname} is not a vector yet offset {ridx} was requested on it."
+
+                if is_vector:
+                    instrs = [(EX_VALU, ("vbroadcast"
+                                         , write_variable(lname, True)
+                                         , read_scalar_within_vector(rname, ridx) if rvector else read_variable(rname, False)))]
+                else:
+                    # lname = rname
+                    rhs = read_scalar_within_vector(rname, ridx) if rvector else read_variable(rname, False)
+                    instrs = [(EX_ALU,  ("|"
+                                         , write_variable(lname, False)
+                                         , rhs
+                                         , rhs))]
+
 
             case _:
                 raise NotImplementedError(f"Unsupported assignment: {lname} = {rvalue}")

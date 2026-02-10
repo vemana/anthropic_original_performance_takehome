@@ -13,17 +13,23 @@ register tree_values_ptr = @4
 register inp_values_ptr = @6
 register vlen = 8
 register[] treevals = @tree_values_ptr
-
-register[] t0 = treevals[0]
-register[] t1 = treevals[1]
-register[] t2 = treevals[2]
+register t0 = treevals[0]
+register t1 = treevals[1]
+register t2 = treevals[2]
 register[] t3 = treevals[3]
 register[] t4 = treevals[4]
 register[] t5 = treevals[5]
 register[] t6 = treevals[6]
 
+# treevals holds level 3 values
+tree_values_ptr = tree_values_ptr + 7
+treevals = @tree_values_ptr
+tree_values_ptr = tree_values_ptr - 7
+
+
 end global
 """
+
 
 thread_preamble="""
 # Compiler fills in implicit registers tidx and tidxlen
@@ -32,17 +38,16 @@ thread register tidxlen
 
 # Work registers
 thread register[] v, idx, t, p1, p2
+thread register a
 
-thread register valoffset
-# valoffset = tidx * vlen
-# valoffset = valoffset + inp_values_ptr
-valoffset = tidxlen + inp_values_ptr
-v = @valoffset
+a = tidxlen + inp_values_ptr
+v = @a
 
 """
 
 level0_header = """
-v = v ^ t0
+p1 = t0
+v = v ^ p1
 """
 
 level0_footer = """
@@ -50,7 +55,9 @@ idx = v % 2
 """
 
 level1_header = """
-t = idx ? t2 : t1
+p1 = t1
+p2 = t2
+t = idx ? p2 : p1
 v = v ^ t
 """
 
@@ -59,8 +66,8 @@ p1 = v % 2
 """
 
 level2_header = """
-t = p1 ? t4 : t3
 p2 = p1 ? t6 : t5
+t = p1 ? t4 : t3
 t = idx ? p2 : t
 idx = idx - -5
 idx = idx * 2 + p1
@@ -74,8 +81,71 @@ v = v ^ t
 
 level_footer="""
 p1 = v % 2
-# p1 = p1 ? -5 : -6
-p1 = p1 - 6
+p2 = p1 ? -5 : -6
+# p2 = p1 - 6
+idx = idx * 2 + p2
+"""
+
+level3_flow_based_header = """
+idx = idx - 14
+# idx in [0, 7]
+
+t = 0
+
+p1 = treevals[0]
+p2 = 0
+p2 = idx == p2
+# t = p1 * p2 + t
+t = p2 ? p1 : t
+
+p1 = treevals[1]
+p2 = 1
+p2 = idx == p2
+# t = p1 * p2 + t
+t = p2 ? p1 : t
+
+p1 = treevals[2]
+p2 = 2
+p2 = idx == p2
+# t = p1 * p2 + t
+t = p2 ? p1 : t
+
+p1 = treevals[3]
+p2 = 3
+p2 = idx == p2
+# t = p1 * p2 + t
+t = p2 ? p1 : t
+
+p1 = treevals[4]
+p2 = 4
+p2 = idx == p2
+# t = p1 * p2 + t
+t = p2 ? p1 : t
+
+p1 = treevals[5]
+p2 = 5
+p2 = idx == p2
+# t = p1 * p2 + t
+t = p2 ? p1 : t
+
+p1 = treevals[6]
+p2 = 6
+p2 = idx == p2
+# t = p1 * p2 + t
+t = p2 ? p1 : t
+
+p1 = treevals[7]
+p2 = 7
+p2 = idx == p2
+# t = p1 * p2 + t
+t = p2 ? p1 : t
+
+v = v ^ t
+"""
+
+level3_flow_based_footer = """
+p1 = v % 2
+idx = idx + 11
 idx = idx * 2 + p1
 """
 
@@ -102,7 +172,8 @@ v = p1 ^ p2
 """
 
 footer="""
-@valoffset = v
+a = tidxlen + inp_values_ptr
+@a = v
 """
 
 def input_to_program_text(height, batch_size, rounds) -> str:
@@ -126,20 +197,26 @@ def input_to_program_text(height, batch_size, rounds) -> str:
     for r in range(0, rounds):
         ret += f"\n######### Round {r} #########"
         level = r % (height+1)
-        if level == 0:
+        custom = True and level == 3 and r == rounds - 2
+
+        if custom:
+          ret += level3_flow_based_header
+        elif level == 0:
           ret += level0_header
-          ret += computation
         elif level == 1:
           ret += level1_header
-          ret += computation
         elif level == 2:
           ret += level2_header
-          ret += computation
         else:
           ret += level3_header
-          ret += computation
+        
+        ret += computation
 
-        if level != height and r != rounds - 1:
+        if level == height or r == rounds - 1:
+          pass
+        elif custom:
+          ret += level3_flow_based_footer
+        else:
           ret += (level0_footer if level == 0 else (level1_footer if level == 1 else level_footer))
 
     ret += footer

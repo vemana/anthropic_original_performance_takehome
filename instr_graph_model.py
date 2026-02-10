@@ -230,9 +230,8 @@ class InstrMeta:
             return (-1, 0)
 
         if not hasattr(self, 'checkpoints'):
-            #             self.checkpoints = [76, 100, 124, 149, 172, 196, 220, 291, 315, 10000]
-            self.checkpoints = [315, 10000]
-#             self.checkpoints = [124, 149, 172, 196, 220, 291, 315, 10000]
+            self.checkpoints = [331, 10000]
+            self.checkpoints = [330, 10000]
 
         for idx, c in enumerate(self.checkpoints):
             if self.instid_in_thread < c:
@@ -410,7 +409,7 @@ class InstrGraph:
         ss = self.ss
         ssize = ss.size()
         imetas = []
-        tidmetas, moreglobal = self.get_tidmetas(conc_threads, emit_constants = False)
+        tidmetas, moreglobal = self.get_tidmetas(conc_threads, emit_constants = True)
         # These can be swapped if emit_constants = True
         imetas.extend(self.globalimetas)
         imetas.extend(moreglobal)
@@ -443,11 +442,11 @@ class InstrGraph:
 
             imetas[prev].after.add(len(imetas) - 1 - cur if loop_count == 1 else cur)
 
-
+      
         for loop_count in range(0, 2):
             last_write = [-1] * (ssize + 1)
             for idx, imeta in enumerate(imetas):
-                slot = imeta.tid % conc_threads
+                slot = work_slot_of(imeta.tid, conc_threads)
                 for register in imeta.registers(ss):
                     if register.is_mem():
                         # This is not safe in general, but works for our problem
@@ -467,8 +466,11 @@ class InstrGraph:
             imetas.reverse()
 
 
-        return GreedyWorkPacker(imetas, conc_threads, ss)
+        return GreedyWorkPacker(imetas, self.num_threads, conc_threads, ss)
 
+
+def work_slot_of(tid, conc_threads):
+    return tid % conc_threads
 
 
 def data_map(imeta:InstrMeta):
@@ -496,9 +498,10 @@ def data_map(imeta:InstrMeta):
 # If ALU slots are available, split any VALU work to schedule here
 # Otherwise, just pack as many as you can
 class GreedyWorkPacker:
-    def __init__(self, imetas: list[InstrMeta], conc_threads: int, ss: ScratchSpace):
+    def __init__(self, imetas: list[InstrMeta], num_threads:int, conc_threads: int, ss: ScratchSpace):
         self.imetas = imetas
         self.ss = ss
+        self.num_threads = num_threads
         self.conc_threads = conc_threads
 
         self.incount: list[int] = [0] * len(self.imetas)
@@ -570,7 +573,7 @@ class GreedyWorkPacker:
         for imeta in self.free:
             if rem_slots > 0 and imeta.lin.engine == engine:
                 rem_slots = rem_slots - 1
-                ret.append(self.__to_serialized(imeta.lin, imeta.tid % self.conc_threads))
+                ret.append(self.__to_serialized(imeta.lin, work_slot_of(imeta.tid, self.conc_threads)))
                 to_retire.append(imeta)
 
         return (ret, to_retire)
@@ -705,7 +708,7 @@ class GreedyWorkPacker:
         summary = defaultdict(int)
         summary[EX_LOAD] = 0
         for dmeta in retired:
-            graphic_update[dmeta.tid].append(dmeta)
+            graphic_update[-1 if dmeta.tid == -1 else work_slot_of(dmeta.tid, self.conc_threads)].append(dmeta)
             summary[dmeta.lin.engine] += 1
         self.display.update(graphic_update
                             , summary = str({k:v for k, v in sorted(summary.items())}) + "\n" + ("FINE" if summary.get('valu', 0) == 6 else "UNSATURATED")
