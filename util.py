@@ -3,9 +3,9 @@ def pretty_print_insts(insts):
 
 
 def pretty_print_map(count, message=''):
-    line = '-' * 200    
+    line = '-' * 100
     if message != '':
-        print(line, message, sep='\n')
+        print(line, f"{message:^100}", sep='\n')
     print(line, "\n".join([f"{key} --> {value}" for key, value in sorted(count.items())]), sep = '\n')
 
 

@@ -117,13 +117,16 @@ class ScratchSpace:
 
 
     def print(self):
-        line = '-' * 200    
+        line = '-' * 100
+        print()
         print(line)
-        print("Scratch space variables")
+        print(f"{'SCRATCH SPACE LAYOUT':^100}")
         print(line)
 
+        print(f'{"ADDRESS":>15}       {"VARIABLE":15}     {"LENGTH":>10}     {"SLOTS":>8}')
+        print(line)
         for _, var_meta in sorted(self.var_meta.items()):
-            print(f"{var_meta.addr:15}   {var_meta.name:15} {var_meta.length:10} {var_meta.slots: 8}")
+            print(f"{var_meta.addr:15}       {var_meta.name:15}     {var_meta.length:10}     {var_meta.slots:8}")
         print(line)
 
         var_meta = self.var_meta
@@ -131,7 +134,6 @@ class ScratchSpace:
         per_thread_space = self.per_thread_space()
         global_space = self.globals_space()
         free_space = self.free_space()
-        print("----------------Scratch Space Stats For Nerds-------------")
         print(f"Concurrent threads  = {conc_threads}")
         print(f"Per thread space    = {per_thread_space}")
         print(f"Globals space       = {global_space}")
