@@ -38,6 +38,7 @@ LIT_COLON :: OPT_SPACE ':' OPT_SPACE
 LIT_PLUS :: OPT_SPACE '+' OPT_SPACE
 LIT_MULT :: OPT_SPACE '*' OPT_SPACE
 
+
 Program :: NL* GlobalProgram ThreadLocalProgram
 
 GlobalProgram :: GlobalStmt* EndGlobalStmt
@@ -59,6 +60,14 @@ ThreadLocalProgram :: ThreadLocalStmt*
 ThreadLocalStmt :: ThreadLocalVariableStmt 
                  | AssignmentStmt
                  | PauseStmt
+                 | TidIfElseStmt
+
+TidIfElseStmt :: LIT_IF_TID SPACE TidRange NL+ ThreadLocalStmt* (LIT_ELIF_TID SPACE TidRange NL+ ThreadLocalStmt*)* LIT_ELSE_TID NL+ ThreadLocalStmt* LIT_ENDIF_TID NL+
+LIT_IF_TID :: 'iftid'
+LIT_ELIF_TID :: 'eliftid'OPT_SPACE
+LIT_ELSE_TID :: 'elsetid'
+LIT_ENDIF_TID :: 'endiftid'
+TidRange :: 'range(' OPT_SPACE IntConstantExpr OPT_SPACE (LIT_COMMA OPT_SPACE IntConstantExpr OPT_SPACE)* ')'
 
 PauseStmt :: 'pause'
 

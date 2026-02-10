@@ -23,6 +23,7 @@ from parser import (
         ThreadLocalProgram,
         ThreadLocalStmt,
         ThreadLocalVariableStmt,
+        TidIfElseStmt,
         ValueExpr,
         Variable,
         VariableDefinition,
@@ -59,29 +60,11 @@ def __program_to_irp(program: Program, num_threads: int, conc_threads: int) -> P
     is_global = False
     irp = IRPipeline(num_threads, conc_threads)
 
-    def variable_decl_stmt_handler(vds: VariableDeclarationStmt):
-        match vds:
-            case VariableDeclaration() as vd:
-                irp.handle_variable_declaration(vd, is_global)
-            case VariableDefinition() as va:
-                irp.handle_variable_definition(va, is_global)
 
     for stmts in [program.global_prog.stmts, program.thread_prog.stmts]:
         is_global = not is_global
         for stmt in stmts:
-            match stmt:
-                case VariableDeclarationStmt() as vds:
-                    variable_decl_stmt_handler(vds)
-                case ThreadLocalVariableStmt(decl = vds):
-                    variable_decl_stmt_handler(vds)
-                case AssignmentStmt() as ast:
-                    match ast:
-                        case LoadVariable() as lv:
-                            irp.handle_load_variable(lv, is_global)
-                        case StoreMemory() as sm:
-                            irp.handle_store_memory(sm, is_global)
-                case PauseStmt() as  pst:
-                    irp.handle_pause_stmt(pst, is_global)
+            irp.handle_stmt(stmt, is_global)
     
     return irp
 
@@ -104,6 +87,7 @@ class IRPipeline:
         self.conc_threads = conc_threads
         self.ss = ScratchSpace()
         self.graph = InstrGraph(self.ss, num_threads)
+        self.tidrange_context: frozenset[int] = None
         self.__handle_const(VLEN * VLEN, is_vector=True) # Ensure this constant is always available
 
 
@@ -112,7 +96,7 @@ class IRPipeline:
         # or a real LogicalInstruction instance
         if isinstance(linstr, tuple):
             linstr = LI(linstr[0], linstr[1])
-        self.graph.add(linstr, is_global)
+        self.graph.add(linstr, is_global, tidrange = self.tidrange_context if not is_global else {-1})
 
 
     def __register_variable(self, name, var_type, num_slots: int):
@@ -330,6 +314,51 @@ class IRPipeline:
     
     def handle_pause_stmt(self, ps: PauseStmt, is_global: bool):
         self.graph.add_pause((EX_FLOW, ("pause", )), is_global)
+
+
+    def handle_tid_ifelse_stmt(self, tif: TidIfElseStmt, is_global: bool):
+        def to_set(trange):
+            return frozenset(range(to_int(trange.start), to_int(trange.end)))
+
+        remaining_tids = set(range(0, self.num_threads))
+
+        for idx, stmts in enumerate(tif.stmts):
+            stmts = tif.stmts[idx]
+            trange = to_set(tif.ranges[idx]) if idx < len(tif.ranges) else frozenset(remaining_tids)
+            self.tidrange_context = trange
+            remaining_tids -= trange
+            try:
+                for stmt in stmts:
+                    self.handle_stmt(stmt, is_global)
+            finally:
+                self.tidrange_context = None
+
+
+    def handle_stmt(self, stmt, is_global):
+        def variable_decl_stmt_handler(vds: VariableDeclarationStmt):
+            match vds:
+                case VariableDeclaration() as vd:
+                    self.handle_variable_declaration(vd, is_global)
+                case VariableDefinition() as va:
+                    self.handle_variable_definition(va, is_global)
+
+        match stmt:
+            case VariableDeclarationStmt() as vds:
+                variable_decl_stmt_handler(vds)
+            case ThreadLocalVariableStmt(decl = vds):
+                variable_decl_stmt_handler(vds)
+            case AssignmentStmt() as ast:
+                match ast:
+                    case LoadVariable() as lv:
+                        self.handle_load_variable(lv, is_global)
+                    case StoreMemory() as sm:
+                        self.handle_store_memory(sm, is_global)
+            case PauseStmt() as  pst:
+                self.handle_pause_stmt(pst, is_global)
+            case TidIfElseStmt() as tif:
+                self.handle_tid_ifelse_stmt(tif, is_global)
+            case _:
+                raise NotImplementedError(f"Cannot yet handle {stmt}")
 
 
     def work(self):

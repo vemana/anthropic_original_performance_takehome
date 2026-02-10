@@ -1,100 +1,102 @@
 # Performance
 
-1265 cycles.
+1253 cycles.
 
 ```text
-[09:07:13] [lsv@vemana]$ git diff origin/main tests/
+[13:17:27] [lsv@vemana]$ git diff origin/main tests/
 
-[09:07:30] [lsv@vemana]$ python3 tests/submission_tests.py > /tmp/log.txt && tail -n 20 /tmp/log.txt
+
+[13:17:29] [lsv@vemana]$ python3 tests/submission_tests.py > /tmp/log.txt && tail -n 20 /tmp/log.txt
 .........
 ----------------------------------------------------------------------
-Ran 9 tests in 1.218s
+Ran 9 tests in 1.226s
 
 OK
 Kernel for H = 10, batch_size = 256, rounds = 16
-Using 32 concurrent threads and found 1265 instructions.
-CYCLES:  1265
+Using 32 concurrent threads and found 1253 instructions.
+CYCLES:  1253
 Testing forest_height=10, rounds=16, batch_size=256
-CYCLES:  1265
+CYCLES:  1253
 Testing forest_height=10, rounds=16, batch_size=256
-CYCLES:  1265
+CYCLES:  1253
 Testing forest_height=10, rounds=16, batch_size=256
-CYCLES:  1265
+CYCLES:  1253
 Testing forest_height=10, rounds=16, batch_size=256
-CYCLES:  1265
+CYCLES:  1253
 Testing forest_height=10, rounds=16, batch_size=256
-CYCLES:  1265
+CYCLES:  1253
 Testing forest_height=10, rounds=16, batch_size=256
-CYCLES:  1265
+CYCLES:  1253
 Testing forest_height=10, rounds=16, batch_size=256
-CYCLES:  1265
+CYCLES:  1253
 Testing forest_height=10, rounds=16, batch_size=256
-CYCLES:  1265
-Speedup over baseline:  116.78577075098815
-
+CYCLES:  1253
+Speedup over baseline:  117.90422984836393
 ```
 
 
 Stats
 
-```
+```text
 ----------------------------------------------------------------------------------------------------
                                     Instruction Count per engine                                    
 ----------------------------------------------------------------------------------------------------
-alu --> 9542
-flow --> 951
-load --> 2375
+alu --> 9467
+flow --> 909
+load --> 2399
 store --> 32
-valu --> 7430
+valu --> 7361
 ----------------------------------------------------------------------------------------------------
                                        Count per instruction                                        
 ----------------------------------------------------------------------------------------------------
 % --> 903
-+ --> 1294
-- --> 146
-<< --> 1352
-== --> 256
->> --> 2893
-^ --> 7447
-add_imm --> 151
++ --> 1284
+- --> 143
+<< --> 1373
+== --> 232
+>> --> 2900
+^ --> 7363
+add_imm --> 130
 const --> 35
-load --> 2306
+load --> 2330
 multiply_add --> 1920
-vbroadcast --> 758
+vbroadcast --> 707
 vload --> 34
-vselect --> 800
+vselect --> 779
 vstore --> 32
 | --> 3
 ----------------------------------------------------------------------------------------------------
                                    Histogram of engine slot usage                                   
 ----------------------------------------------------------------------------------------------------
-('alu', 0) --> 323
+('alu', 0) --> 314
 ('alu', 1) --> 2
 ('alu', 2) --> 5
 ('alu', 3) --> 2
-('alu', 4) --> 121
-('alu', 8) --> 174
+('alu', 4) --> 123
+('alu', 6) --> 1
+('alu', 7) --> 1
+('alu', 8) --> 177
 ('alu', 9) --> 1
 ('alu', 10) --> 1
 ('alu', 11) --> 3
-('alu', 12) --> 633
-('flow', 0) --> 314
-('flow', 1) --> 951
-('load', 0) --> 77
+('alu', 12) --> 623
+('flow', 0) --> 344
+('flow', 1) --> 909
+('load', 0) --> 53
 ('load', 1) --> 1
-('load', 2) --> 1187
-('store', 0) --> 1233
+('load', 2) --> 1199
+('store', 0) --> 1221
 ('store', 1) --> 32
 ('valu', 0) --> 9
-('valu', 1) --> 11
+('valu', 1) --> 6
 ('valu', 2) --> 6
-('valu', 3) --> 3
-('valu', 4) --> 5
-('valu', 5) --> 8
-('valu', 6) --> 1223
-Arithcount = 68982
-alu_intensity = 1149.7
-alu_flow_intensity = 1130.8524590163934
+('valu', 3) --> 8
+('valu', 4) --> 10
+('valu', 5) --> 5
+('valu', 6) --> 1209
+Arithcount = 68355
+alu_intensity = 1139.25
+alu_flow_intensity = 1120.5737704918033
 
 ----------------------------------------------------------------------------------------------------
                                         SCRATCH SPACE LAYOUT                                        

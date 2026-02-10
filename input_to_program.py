@@ -171,6 +171,23 @@ p2 = v >> 16
 v = p1 ^ p2
 """
 
+l3_conditional_range = 29
+l3_conditional_header = f"""
+iftid range(0, {l3_conditional_range})
+  {level3_flow_based_header}
+elsetid
+  {level3_header}
+endiftid
+"""
+
+l3_conditional_footer = f"""
+iftid range(0, {l3_conditional_range})
+  {level3_flow_based_footer}
+elsetid
+  {level_footer}
+endiftid
+"""
+
 footer="""
 a = tidxlen + inp_values_ptr
 @a = v
@@ -200,7 +217,7 @@ def input_to_program_text(height, batch_size, rounds) -> str:
         custom = True and level == 3 and r == rounds - 2
 
         if custom:
-          ret += level3_flow_based_header
+          ret += l3_conditional_header
         elif level == 0:
           ret += level0_header
         elif level == 1:
@@ -215,11 +232,12 @@ def input_to_program_text(height, batch_size, rounds) -> str:
         if level == height or r == rounds - 1:
           pass
         elif custom:
-          ret += level3_flow_based_footer
+          ret += l3_conditional_footer
         else:
           ret += (level0_footer if level == 0 else (level1_footer if level == 1 else level_footer))
 
     ret += footer
+
     with open('/tmp/program.txt', "w", encoding="utf-8") as file:
         file.write(ret) 
     return ret

@@ -221,6 +221,7 @@ lit_colon = seq(opt_space, lit(':'), opt_space)
 lit_plus = seq(opt_space, lit('+'), opt_space)
 lit_mult = seq(opt_space, lit('*'), opt_space)
 
+
 variable_name = seq(small, letter.star()).map(lambda x: x[0] + "".join(x[1]))
 
 int_constant_expr = (
@@ -286,8 +287,37 @@ thread_local_variable_stmt = seq(lit('thread'), space, variable_declaration_stmt
     lambda x: ThreadLocalVariableStmt(x[2])
 )
 
+@dataclass
+class TidRange:
+    start: IntConstantExpr
+    end: IntConstantExpr
 
-thread_local_stmt = thread_local_variable_stmt | assignment_stmt | pause_stmt
+@dataclass
+class TidIfElseStmt:
+    ranges: list[TidRange]
+    stmts: list[list[ThreadLocalStmt]]
+
+tid_range = seq(lit('range('), opt_space, int_constant_expr, opt_space
+                , seq(lit_comma, opt_space, int_constant_expr, opt_space).plus()
+                , lit(')'))\
+        .map(lambda res: TidRange(start=res[2]
+                                  , end=res[4][0][2]))
+
+# thread_local_stmt = thread_local_variable_stmt | assignment_stmt | pause_stmt | tid_if_else_stmt
+thread_local_stmt = lazy (lambda: thread_local_variable_stmt | assignment_stmt | pause_stmt | tid_if_else_stmt)
+
+tid_if_else_stmt = seq(lit('iftid') , space , tid_range , nl.plus()
+                       , thread_local_stmt.star()
+                       , seq(lit('eliftid'), space, tid_range, nl.plus()
+                             , thread_local_stmt.star()).star()
+                       , lit('elsetid'), nl.plus()
+                       , thread_local_stmt.star()
+                       , lit('endiftid'), nl.plus())\
+        .map(lambda res: TidIfElseStmt(
+            ranges = [res[2]] + [x[2] for x in res[5]] + [],
+            stmts  = [res[4]] + [x[4] for x in res[5]] + [res[8]],
+            ))
+
 
 thread_local_program = thread_local_stmt.star().map(ThreadLocalProgram)
 

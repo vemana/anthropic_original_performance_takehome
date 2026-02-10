@@ -433,6 +433,8 @@ p2 = p1 ? -5 : -6
 idx = idx * 2 + p2
 
 ######### Round 14 #########
+iftid range(0, 29)
+  
 idx = idx - 14
 # idx in [0, 7]
 
@@ -488,6 +490,13 @@ t = p2 ? p1 : t
 
 v = v ^ t
 
+elsetid
+  
+t = @idx[]
+v = v ^ t
+
+endiftid
+
 
 v = v * 4097 + 0x7ED55D16
 
@@ -508,9 +517,20 @@ p1 = v ^ 0xB55A4F09
 p2 = v >> 16
 v = p1 ^ p2
 
+iftid range(0, 29)
+  
 p1 = v % 2
 idx = idx + 11
 idx = idx * 2 + p1
+
+elsetid
+  
+p1 = v % 2
+p2 = p1 ? -5 : -6
+# p2 = p1 - 6
+idx = idx * 2 + p2
+
+endiftid
 
 ######### Round 15 #########
 t = @idx[]

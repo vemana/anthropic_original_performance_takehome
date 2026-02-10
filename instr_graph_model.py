@@ -194,6 +194,8 @@ class Work(Protocol):
     def have_more(self) -> bool: ...
     def take(self) -> list[SerializedInstruction]: ...
 
+INFINITE_SET = frozenset(range(-1, 100))
+
 
 @dataclass(kw_only=True, eq=True, unsafe_hash=True)
 class InstrMeta:
@@ -202,6 +204,13 @@ class InstrMeta:
     tid: int # Thread id; = 0 if global
     instid_in_thread: int # The instruction id within this thread
     after: ios  # ids of instructions that this unlocks
+    tidrange: frozenset[int] = field(default_factory = lambda: INFINITE_SET)
+
+
+    def __post_init__(self):
+        tid = self.tid
+        tidrange = self.tidrange
+        assert tid == -2 or (tid in tidrange), f"{tid} was neither -2 nor in {tidrange}"
 
 
     def __priority_tuple(self):
@@ -300,6 +309,7 @@ class InstrMeta:
     def compact_str(self):
         return f"{self.instid:>10} {self.tid:>5} {self.instid_in_thread:>5} {self.lin.compact_str():150}          {self.after}"
 
+SET_MINUS_ONE = frozenset([-1])
 
 class InstrGraph:
     def __init__(self, ss: ScratchSpace, num_threads:int):
@@ -310,11 +320,17 @@ class InstrGraph:
         self.globalimetas: list[InstrMeta] = []
 
 
-    def add(self, linst: LogicalInstruction, is_global):
+    def add(self, linst: LogicalInstruction, is_global, *, tidrange: set[int]):
         if is_global:
-            self.globalimetas.append(InstrMeta(instid=-1, lin=linst, tid=-1, instid_in_thread = -1, after=ios()))
+            assert tidrange is None or tidrange == {-1}, f"For global instructions, tidrange should be -1, but was {tidrange}"
+            self.globalimetas.append(InstrMeta(instid=-1, lin=linst, tid=-1, instid_in_thread = -1, after=ios(), tidrange = SET_MINUS_ONE))
         else:
-            self.imetas.append(InstrMeta(instid=-1, lin=linst, tid=-2, instid_in_thread=-1, after=ios()))
+            self.imetas.append(InstrMeta(instid=-1
+                                         , lin=linst
+                                         , tid=-2
+                                         , instid_in_thread=-1
+                                         , after=ios()
+                                         , tidrange = INFINITE_SET if tidrange is None else tidrange))
 
     
     def add_pause(self, pinst: LogicalInstruction, is_global):
@@ -418,7 +434,7 @@ class InstrGraph:
 
         for i in range(0, self.num_threads):
             threadinsts = [tidmetas[i + self.num_threads * x] for x in range(0, len(tidmetas) // self.num_threads)] \
-                          + [replace(x, tid=i) for x in self.imetas]
+                          + [replace(x, tid=i) for x in self.imetas if i in x.tidrange]
             for idx, x in enumerate(threadinsts):
                 x.instid_in_thread = idx
             imetas.extend(threadinsts)

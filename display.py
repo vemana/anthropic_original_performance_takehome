@@ -244,7 +244,7 @@ class Display:
             f.write("\n".join(html_content))
         
         abs_path = os.path.abspath(filename)
-        print(f"Successfully generated HTML report: {abs_path}")
+#         print(f"Successfully generated HTML report: {abs_path}")
 #         webbrowser.open(f"file://{abs_path}")
 
 def main():
