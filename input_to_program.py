@@ -12,9 +12,9 @@ global_preamble="""
 register tree_values_ptr = @4
 register inp_values_ptr = @6
 register[] treevals = @tree_values_ptr
-register t0 = treevals[0]
-register t1 = treevals[1]
-register t2 = treevals[2]
+register[] t0 = treevals[0]
+register[] t1 = treevals[1]
+register[] t2 = treevals[2]
 register[] t3 = treevals[3]
 register[] t4 = treevals[4]
 register[] t5 = treevals[5]
@@ -25,6 +25,8 @@ tree_values_ptr = tree_values_ptr + 7
 treevals = @tree_values_ptr
 tree_values_ptr = tree_values_ptr - 7
 
+register[] b0 = treevals[0]
+register[] b1 = treevals[1]
 
 end global
 """
@@ -37,16 +39,17 @@ thread register tidxlen
 
 # Work registers
 thread register[] v, idx, t, p1, p2
-thread register a
 
-a = tidxlen + inp_values_ptr
-v = @a
+tidxlen = tidxlen + inp_values_ptr
+v = @tidxlen
 
 """
 
 level0_header = """
-p1 = t0
-v = v ^ p1
+# p1 = t0
+# v = v ^ p1
+
+v = v ^ t0
 """
 
 level0_footer = """
@@ -54,9 +57,7 @@ idx = v % 2
 """
 
 level1_header = """
-p1 = t1
-p2 = t2
-t = idx ? p2 : p1
+t = idx ? t2 : t1
 v = v ^ t
 """
 
@@ -91,40 +92,38 @@ idx = idx + 2
 # idx in [0, 7]
 
 t = treevals[7]
+t = idx ? t : b0
 
-p1 = treevals[0]
-t = idx ? t : p1
-
-p1 = treevals[1]
+# p1 = treevals[1]
 idx = idx - 1
-t = idx ? t : p1
+t = idx ? t : b1
 
-p1 = treevals[2]
+p2 = treevals[2]
 idx = idx - 1
-t = idx ? t : p1
+t = idx ? t : p2
 
 p1 = treevals[3]
 idx = idx - 1
 t = idx ? t : p1
 
-p1 = treevals[4]
+p2 = treevals[4]
 idx = idx - 1
-t = idx ? t : p1
+t = idx ? t : p2
 
 p1 = treevals[5]
 idx = idx - 1
 t = idx ? t : p1
 
 p1 = treevals[6]
-idx = idx - 1
-t = idx ? t : p1
+p2 = idx - 1
+t = p2 ? t : p1
 
 v = v ^ t
 """
 
 level3_flow_based_footer = """
 p1 = v % 2
-idx = idx + 17
+idx = idx + 16
 idx = idx * 2 + p1
 """
 
@@ -154,8 +153,7 @@ v = p1 ^ p2
 
 
 footer="""
-a = tidxlen + inp_values_ptr
-@a = v
+@tidxlen = v
 """
 
 def input_to_program_text(height, batch_size, rounds) -> str:
@@ -177,22 +175,22 @@ def input_to_program_text(height, batch_size, rounds) -> str:
     ret += global_preamble
     ret += thread_preamble
 
-    l3_conditional_range = 28
+    l3_conditional_range = 32
 
     l3_conditional_header = f"""
-    iftid range(0, {l3_conditional_range})
-      {level3_flow_based_header}
-    elsetid
-      {level3_header}
-    endiftid
+iftid range(0, {l3_conditional_range})
+{level3_flow_based_header}
+elsetid
+{level3_header}
+endiftid
     """
 
     l3_conditional_footer = f"""
-    iftid range(0, {l3_conditional_range})
-      {level3_flow_based_footer}
-    elsetid
-      {level_footer}
-    endiftid
+iftid range(0, {l3_conditional_range})
+{level3_flow_based_footer}
+elsetid
+{level_footer}
+endiftid
     """
     use_custom = lambda: True and level == 3 #and r == rounds - 2
 

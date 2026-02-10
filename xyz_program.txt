@@ -2,9 +2,9 @@
 register tree_values_ptr = @4
 register inp_values_ptr = @6
 register[] treevals = @tree_values_ptr
-register t0 = treevals[0]
-register t1 = treevals[1]
-register t2 = treevals[2]
+register[] t0 = treevals[0]
+register[] t1 = treevals[1]
+register[] t2 = treevals[2]
 register[] t3 = treevals[3]
 register[] t4 = treevals[4]
 register[] t5 = treevals[5]
@@ -15,6 +15,8 @@ tree_values_ptr = tree_values_ptr + 7
 treevals = @tree_values_ptr
 tree_values_ptr = tree_values_ptr - 7
 
+register[] b0 = treevals[0]
+register[] b1 = treevals[1]
 
 end global
 
@@ -24,15 +26,16 @@ thread register tidxlen
 
 # Work registers
 thread register[] v, idx, t, p1, p2
-thread register a
 
-a = tidxlen + inp_values_ptr
-v = @a
+tidxlen = tidxlen + inp_values_ptr
+v = @tidxlen
 
 
 ######### Round 0 #########
-p1 = t0
-v = v ^ p1
+# p1 = t0
+# v = v ^ p1
+
+v = v ^ t0
 
 
 # Stage 1
@@ -59,9 +62,7 @@ v = p1 ^ p2
 idx = v % 2
 
 ######### Round 1 #########
-p1 = t1
-p2 = t2
-t = idx ? p2 : p1
+t = idx ? t2 : t1
 v = v ^ t
 
 
@@ -124,49 +125,47 @@ p2 = p1 ? -5 : -6
 idx = idx * 2 + p2
 
 ######### Round 3 #########
-    iftid range(0, 28)
-      
+iftid range(0, 32)
+
 idx = idx - 16
 idx = idx + 2
 # idx in [0, 7]
 
 t = treevals[7]
+t = idx ? t : b0
 
-p1 = treevals[0]
-t = idx ? t : p1
-
-p1 = treevals[1]
+# p1 = treevals[1]
 idx = idx - 1
-t = idx ? t : p1
+t = idx ? t : b1
 
-p1 = treevals[2]
+p2 = treevals[2]
 idx = idx - 1
-t = idx ? t : p1
+t = idx ? t : p2
 
 p1 = treevals[3]
 idx = idx - 1
 t = idx ? t : p1
 
-p1 = treevals[4]
+p2 = treevals[4]
 idx = idx - 1
-t = idx ? t : p1
+t = idx ? t : p2
 
 p1 = treevals[5]
 idx = idx - 1
 t = idx ? t : p1
 
 p1 = treevals[6]
-idx = idx - 1
-t = idx ? t : p1
+p2 = idx - 1
+t = p2 ? t : p1
 
 v = v ^ t
 
-    elsetid
-      
+elsetid
+
 t = @idx[]
 v = v ^ t
 
-    endiftid
+endiftid
     
 
 # Stage 1
@@ -190,20 +189,20 @@ p1 = v ^ 0xB55A4F09
 p2 = v >> 16
 v = p1 ^ p2
 
-    iftid range(0, 28)
-      
+iftid range(0, 32)
+
 p1 = v % 2
-idx = idx + 17
+idx = idx + 16
 idx = idx * 2 + p1
 
-    elsetid
-      
+elsetid
+
 p1 = v % 2
 p2 = p1 ? -5 : -6
 # p2 = p1 - 6
 idx = idx * 2 + p2
 
-    endiftid
+endiftid
     
 ######### Round 4 #########
 t = @idx[]
@@ -418,8 +417,10 @@ p2 = v >> 16
 v = p1 ^ p2
 
 ######### Round 11 #########
-p1 = t0
-v = v ^ p1
+# p1 = t0
+# v = v ^ p1
+
+v = v ^ t0
 
 
 # Stage 1
@@ -446,9 +447,7 @@ v = p1 ^ p2
 idx = v % 2
 
 ######### Round 12 #########
-p1 = t1
-p2 = t2
-t = idx ? p2 : p1
+t = idx ? t2 : t1
 v = v ^ t
 
 
@@ -511,49 +510,47 @@ p2 = p1 ? -5 : -6
 idx = idx * 2 + p2
 
 ######### Round 14 #########
-    iftid range(0, 28)
-      
+iftid range(0, 32)
+
 idx = idx - 16
 idx = idx + 2
 # idx in [0, 7]
 
 t = treevals[7]
+t = idx ? t : b0
 
-p1 = treevals[0]
-t = idx ? t : p1
-
-p1 = treevals[1]
+# p1 = treevals[1]
 idx = idx - 1
-t = idx ? t : p1
+t = idx ? t : b1
 
-p1 = treevals[2]
+p2 = treevals[2]
 idx = idx - 1
-t = idx ? t : p1
+t = idx ? t : p2
 
 p1 = treevals[3]
 idx = idx - 1
 t = idx ? t : p1
 
-p1 = treevals[4]
+p2 = treevals[4]
 idx = idx - 1
-t = idx ? t : p1
+t = idx ? t : p2
 
 p1 = treevals[5]
 idx = idx - 1
 t = idx ? t : p1
 
 p1 = treevals[6]
-idx = idx - 1
-t = idx ? t : p1
+p2 = idx - 1
+t = p2 ? t : p1
 
 v = v ^ t
 
-    elsetid
-      
+elsetid
+
 t = @idx[]
 v = v ^ t
 
-    endiftid
+endiftid
     
 
 # Stage 1
@@ -577,20 +574,20 @@ p1 = v ^ 0xB55A4F09
 p2 = v >> 16
 v = p1 ^ p2
 
-    iftid range(0, 28)
-      
+iftid range(0, 32)
+
 p1 = v % 2
-idx = idx + 17
+idx = idx + 16
 idx = idx * 2 + p1
 
-    elsetid
-      
+elsetid
+
 p1 = v % 2
 p2 = p1 ? -5 : -6
 # p2 = p1 - 6
 idx = idx * 2 + p2
 
-    endiftid
+endiftid
     
 ######### Round 15 #########
 t = @idx[]
@@ -618,5 +615,4 @@ p1 = v ^ 0xB55A4F09
 p2 = v >> 16
 v = p1 ^ p2
 
-a = tidxlen + inp_values_ptr
-@a = v
+@tidxlen = v

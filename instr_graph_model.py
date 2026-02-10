@@ -243,7 +243,7 @@ class InstrMeta:
             return (-1, 0)
 
         if not hasattr(self, 'checkpoints'):
-            self.checkpoints = [292, 10000]
+            self.checkpoints = [284, 10000]
 
         for idx, c in enumerate(self.checkpoints):
             if self.instid_in_thread < c:
@@ -631,7 +631,6 @@ class GreedyWorkPacker:
         # dest = a*b + c
 
         if dest.overlaps(c, self.ss, work_slot_of(imeta.tid, self.conc_threads)):
-            assert False
             return False
 
         clen = len(self.imetas)
@@ -672,11 +671,39 @@ class GreedyWorkPacker:
         return False
 
 
+    def __split_one_free_broadcast(self, imeta):
+        regs = imeta.registers(self.ss)
+        assert imeta.lin.inst[0] == "vbroadcast"
+        assert len(regs) == 2
+
+        dest,src = regs[0], regs[1]
+
+        if dest.overlaps(src, self.ss, work_slot_of(imeta.tid, self.conc_threads)):
+            return False
+
+        nmetas =  [InstrMeta(
+                    instid = imeta.instid
+                    , lin = LI(EX_ALU , ('|'
+                                   , dest.scalar_at_offset(i)
+                                   , src
+                                   , src))
+                    , tid = imeta.tid
+                    , instid_in_thread = imeta.instid_in_thread
+                    , after = imeta.after) for i in range(0, VLEN)]
+
+        for idx in imeta.after:
+            self.incount[idx] += (VLEN - 1)
+        self.free.remove(imeta)
+        self.free.extend(nmetas)
+        return True
+
+
     def __split_valu_into_alu(self, alu_slots, already_taken_imetas):
         to_split = (alu_slots + VLEN - 1) // VLEN
 
         so_far = 0
         mul_adds = []
+        broadcasts = []
         for imeta in self.free:
             if so_far >= to_split:
                 break
@@ -692,12 +719,21 @@ class GreedyWorkPacker:
             if opcode == "multiply_add":
                 mul_adds.append(imeta)
                 continue
+            elif opcode == "vbroadcast":
+                broadcasts.append(imeta)
+                continue
             elif len(imeta.lin.inst[0]) > 5:
                 # Only support +, -, ... arithmetic operators for splitting
                 # Can't split vbroadcast
                 continue
             else:
                 self.__split_one_free_valu_to_alu(imeta)
+                so_far += 1
+
+        for imeta in broadcasts:
+            if so_far >= to_split:
+                break
+            if self.__split_one_free_broadcast(imeta):
                 so_far += 1
 
         for imeta in mul_adds:
