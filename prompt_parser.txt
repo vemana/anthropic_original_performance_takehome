@@ -1,6 +1,11 @@
 # Intro
 This prompt generates a parser from the grammar of a simple language. The language is then compiled and optimized into machine code for the problem's machine. The language is described by language.md but even easier perhaps is to look at an example in `parser.py`.
 
+Invariants:
+- Inner token (like binary operator literal) should consume white space before and after it
+- A Statement expansion either ends with another Statement or ends with NLplus. If you violate this rule, you'll get errors
+- Use SPACE to enforce at least one white space and OPT_SPACE to enforce optional space
+
 
 # Base Prompt
 Write a Parser in python using Parser Combinator style. I will give the grammar and explain the syntax of the grammar. The output should be a python structure corresponding to the root of the grammar.

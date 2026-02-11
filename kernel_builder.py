@@ -63,10 +63,10 @@ def optimize(program: Program, num_threads: int, conc_threads: int) -> List[Seri
 
 
 def work_to_instrs(work: Work) -> list[SerializedInstruction]:
-    work.print()
     insts = []
     while work.have_more():
         insts.append(work.take())
+    work.print()
     return insts
 
 

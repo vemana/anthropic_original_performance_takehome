@@ -1,12 +1,13 @@
 from dataclasses import dataclass, field, replace
 from typing import Any, Protocol
 from scratch import ScratchSpace 
-from lib import InsertionOrderedSet as ios
+from lib import MinHeap, MinHeap as ios
 from collections import defaultdict, Counter
 from display import Display, DataInfo
-from lib import MinHeap, TestMinHeap
+from util import pretty_print_map
 import threading
 import time
+import functools
 
 EX_VALU="valu"
 EX_ALU="alu"
@@ -217,43 +218,6 @@ class InstrMeta:
         assert tid == -2 or (tid in tidrange), f"{tid} was neither -2 nor in {tidrange}"
 
 
-    def __priority_tuple(self):
-        is_global = 1 if self.tid < 0 else 0
-        is_greedy = (1 if self.tid < 16 else 0) * (1 - is_global)
-        is_batch = (1 - is_greedy) * (1 - is_global)
-        return (0
-                , self.__block()
-                , self.tid
-                , self.instid
-                , self.lin
-                , self.tid
-                , self.instid_in_thread
-                , self.after
-                )
-
-
-    # Remember that after split, there can be VLEN with the same instid but different register offsets
-    def __lt__(self, that):
-        return self.__priority_tuple() < that.__priority_tuple()
-
-    
-    def __block(self):
-
-        if self.tid < 0:
-            return (-1, 0)
-
-        if not hasattr(self, 'checkpoints'):
-            self.checkpoints = [284, 10000]
-
-        for idx, c in enumerate(self.checkpoints):
-            if self.instid_in_thread < c:
-                return idx, 0
-#                 return (c - self.instid_in_thread, self.tid)
-#                 return (idx, c - self.instid_in_thread)
-
-        assert False
-
-
     def registers(self, ss:ScratchSpace):
         ret = []
         lin = self.lin
@@ -309,8 +273,56 @@ class InstrMeta:
         return True
 
 
+    def opcode(self):
+        return self.lin.inst[0]
+
+
     def compact_str(self):
         return f"{self.instid:>10} {self.tid:>5} {self.instid_in_thread:>5} {self.lin.compact_str():150}          {self.after}"
+
+
+def imeta_priority_fn(self: InstrMeta, all_imetas: list[InstrMeta]):
+    def next_real_instid(imeta):
+        if imeta.tid >= 0:
+            return imeta.tid, imeta.instid_in_thread, imeta.instid
+
+        if imeta.after.is_empty():
+            return -1, -1, -1
+
+        best = None
+        for nidx in imeta.after:
+            nmeta = all_imetas[nidx]
+            cand = next_real_instid(nmeta)
+            if best is None or cand < best:
+                best = cand
+        return best
+    
+    def block(self):
+        if self.tid < 0:
+            # Find the nearest thread that this instruction is blocking
+            r = next_real_instid(self)
+            return 0, *r
+
+        if not hasattr(self, 'checkpoints'):
+            self.checkpoints = [289, 10000]
+
+        for idx, c in enumerate(self.checkpoints):
+            if self.instid_in_thread < c:
+                return idx, self.tid, self.instid_in_thread
+
+        assert False
+
+    # Remember that after split, there can be VLEN with the same instid but different register offsets
+    return (0
+            , block(self)
+            , self.tid
+            , self.instid
+            , self.lin
+            , self.tid
+            , self.instid_in_thread
+            , self.after
+            )
+
 
 SET_MINUS_ONE = frozenset([-1])
 
@@ -341,13 +353,12 @@ class InstrGraph:
         # Needs real sync between threads, which we don't suppor
 
 
-    def get_tidmetas(self, conc_threads, emit_constants = False):
+    def get_tidmetas(self, conc_threads):
         nthreads = self.num_threads
         cthreads = conc_threads
         if not self.ss.has_variable('tidxlen'):
             return [], []
 
-#         raise ValueError(f"Doing tidx {cthreads} {nthreads}")
         if cthreads < nthreads or nthreads <= VLEN:
             ret = [
                 InstrMeta(instid = -1
@@ -371,26 +382,26 @@ class InstrGraph:
           
         ret = []
 
-        if emit_constants:
+        def set_constant(src_val, req_val):
             ret.append(InstrMeta(instid = -1
                                  , lin = LI(EX_LOAD
                                             , ("const"
-                                               , LR(name=self.ss.constant_name(VLEN * VLEN, is_vector=True)
+                                               , LR(name=self.ss.constant_name(src_val, is_vector=True)
                                                     , offset = 0
-                                                    , is_vector=True
+                                                    , is_vector=False
                                                     , is_read=False)
-                                               , VLEN*VLEN))
+                                               , req_val))
                                  , tid = -1
                                  , instid_in_thread = -1
                                  , after = ios()))
             ret.append(InstrMeta(instid = -1
                                  , lin = LI(EX_VALU
                                             , ("vbroadcast"
-                                               , LR(name=self.ss.constant_name(VLEN * VLEN, is_vector=True)
+                                               , LR(name=self.ss.constant_name(src_val, is_vector=True)
                                                     , offset = 0
                                                     , is_vector=True
                                                     , is_read=False)
-                                               , LR(name=self.ss.constant_name(VLEN * VLEN, is_vector = True)
+                                               , LR(name=self.ss.constant_name(src_val, is_vector = True)
                                                     , offset = 0
                                                     , is_vector = False
                                                     , is_read = True)))
@@ -398,40 +409,48 @@ class InstrGraph:
                                  , instid_in_thread = -1
                                  , after = ios()))
 
+        # Temporarily hijack the '2' constant. Note: we can choose to implement
+        # ss.dealloc to return this space back for allocation in case `2` is not
+        # really a constant required by this implementation.
+        self.ss.alloc_const(2, True)
+        set_constant(2, VLEN*VLEN)
+
         npos = nthreads % VLEN
         if npos == 0:
             npos = VLEN
         lpos=0
         ret.extend([InstrMeta(instid = -1
-                          , lin = LI(EX_LOAD, ("const" , tid_array_op(i, is_vector = False, is_read = False) , i * VLEN if i < npos else -64 + i * VLEN))
+                          , lin = LI(EX_LOAD, ("const"
+                                               , tid_array_op(i, is_vector = False, is_read = False)
+                                               , i * VLEN if i < npos else VLEN * (i - VLEN)))
                           , tid = -1
                           , instid_in_thread = -1
                           , after = ios()) 
                for i in range(0, VLEN)])
+
 
         while npos < nthreads:
             ret.append(InstrMeta(instid = -1
                           , lin = LI(EX_VALU, ("+"
                                                , tid_array_op(npos, is_vector=True, is_read=False)
                                                , tid_array_op(lpos, is_vector=True, is_read=True)
-                                               , LR(name=self.ss.constant_name(VLEN * VLEN, is_vector=True), offset = 0, is_vector=True, is_read=True)))
+                                               , LR(name=self.ss.constant_name(2, is_vector=True), offset = 0, is_vector=True, is_read=True)))
                           , tid = -1
                           , instid_in_thread = -1
                           , after = ios()))
             npos += VLEN
             lpos += VLEN
 
+        set_constant(2, 2)
         return [], ret
 
 
     def get_work(self, *, conc_threads:int, optimize=False) -> Work:
         ss = self.ss
-        ssize = ss.size()
         imetas = []
-        tidmetas, moreglobal = self.get_tidmetas(conc_threads, emit_constants = True)
-        # These can be swapped if emit_constants = True
-        imetas.extend(self.globalimetas)
+        tidmetas, moreglobal = self.get_tidmetas(conc_threads)
         imetas.extend(moreglobal)
+        imetas.extend(self.globalimetas)
 
         assert len(tidmetas) % self.num_threads == 0, f"{len(tidmetas)}, {self.num_threads}"
 
@@ -462,6 +481,7 @@ class InstrGraph:
             imetas[prev].after.add(len(imetas) - 1 - cur if loop_count == 1 else cur)
 
       
+        ssize = ss.size()
         for loop_count in range(0, 2):
             last_write = [-1] * (ssize + 1)
             for idx, imeta in enumerate(imetas):
@@ -512,6 +532,7 @@ def data_map(imeta:InstrMeta):
 
     raise Exception("haha")
 
+
 # Packs work by taking any schedulable instructions in the following manner:
 # If VALU slots are available, schedule it
 # If ALU slots are available, split any VALU work to schedule here
@@ -525,9 +546,11 @@ class GreedyWorkPacker:
 
         self.incount: list[int] = [0] * len(self.imetas)
         self.frontier: list[InstrMeta] = []  # All issuable instructions
-        self.free: MinHeap[InstrMeta] = MinHeap()      # All issuable instructions with tids < self.next_batch_tid
+        # All issuable instructions with tids < self.next_batch_tid
+        self.free: MinHeap[InstrMeta] = MinHeap(priority_key_fn = functools.partial(imeta_priority_fn, all_imetas = self.imetas))
         self.next_batch_tid = self.conc_threads # Enable the first batch of conc_threads AND global thread
 
+        self.split_counts = defaultdict(int)
         self.cycle_number = 0
         self.__initialize()
 
@@ -619,6 +642,9 @@ class GreedyWorkPacker:
         self.free.remove(imeta)
         self.free.extend(nmetas)
 
+        self.split_counts[imeta.opcode()] += 1
+        return True
+
 
     def __split_one_free_multiply_add(self, imeta):
         regs = imeta.registers(self.ss)
@@ -668,7 +694,9 @@ class GreedyWorkPacker:
             self.incount[idx] += (VLEN - 1)
         self.free.remove(imeta)
         self.free.extend(first)
-        return False
+
+        self.split_counts[imeta.opcode()] += 1
+        return True
 
 
     def __split_one_free_broadcast(self, imeta):
@@ -695,6 +723,8 @@ class GreedyWorkPacker:
             self.incount[idx] += (VLEN - 1)
         self.free.remove(imeta)
         self.free.extend(nmetas)
+
+        self.split_counts[imeta.opcode()] += 1
         return True
 
 
@@ -715,7 +745,7 @@ class GreedyWorkPacker:
                 continue
 
             # Split non multiply-adds preferentially
-            opcode = imeta.lin.inst[0]
+            opcode = imeta.opcode()
             if opcode == "multiply_add":
                 mul_adds.append(imeta)
                 continue
@@ -727,8 +757,8 @@ class GreedyWorkPacker:
                 # Can't split vbroadcast
                 continue
             else:
-                self.__split_one_free_valu_to_alu(imeta)
-                so_far += 1
+                if self.__split_one_free_valu_to_alu(imeta):
+                    so_far += 1
 
         for imeta in broadcasts:
             if so_far >= to_split:
@@ -855,6 +885,7 @@ class GreedyWorkPacker:
         print(*[x.compact_str() for x in self.imetas if x.tid < 1], sep='\n')
         print("\n")
         print(*[x.compact_str() for x in self.imetas if x.tid == self.num_threads - 1], sep='\n')
+        pretty_print_map(self.split_counts, message = "VALU SPLIT COUNTS")
 
 
     def have_more(self):

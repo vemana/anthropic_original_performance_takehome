@@ -534,6 +534,7 @@ def build_mem_image(t: Tree, inp: Input) -> list[int]:
     mem[6] = inp_values_p
     mem[7] = extra_room
 
+#     assert 1 == 0, f"inp_values_p = {inp_values_p}, forest_values_p = {forest_values_p}"
     mem[header:inp_indices_p] = t.values
     mem[inp_indices_p:inp_values_p] = inp.indices
     mem[inp_values_p:] = inp.values

@@ -6,7 +6,8 @@ def pretty_print_map(count, message=''):
     line = '-' * 100
     if message != '':
         print(line, f"{message:^100}", sep='\n')
-    print(line, "\n".join([f"{key} --> {value}" for key, value in sorted(count.items())]), sep = '\n')
+    print(line, "\n".join([f"{str(key):>20} {value:>10}" for key, value in sorted(count.items())]), sep = '\n')
+    print(line)
 
 
 def pretty_print(mem, message=''):

@@ -88,7 +88,6 @@ class IRPipeline:
         self.ss = ScratchSpace()
         self.graph = InstrGraph(self.ss, num_threads)
         self.tidrange_context: frozenset[int] = None
-        self.__handle_const(VLEN * VLEN, is_vector=True) # Ensure this constant is always available
 
 
     def __add(self, is_global:bool, linstr):

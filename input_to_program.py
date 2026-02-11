@@ -1,6 +1,9 @@
+from problem import VLEN
 from parser import Program, program as parser
+import textwrap
 
 def input_to_program(height:int, batch_size:int, rounds:int) -> str: 
+    assert batch_size % VLEN == 0
     text = input_to_program_text(height, batch_size, rounds)
     parsed = parser.parse(text)
     if parsed.next_index != len(text):
@@ -9,9 +12,8 @@ def input_to_program(height:int, batch_size:int, rounds:int) -> str:
     return parsed.value
 
 global_preamble="""
-register tree_values_ptr = @4
-register inp_values_ptr = @6
-register[] treevals = @tree_values_ptr
+
+register[] treevals = @7
 register[] t0 = treevals[0]
 register[] t1 = treevals[1]
 register[] t2 = treevals[2]
@@ -20,14 +22,13 @@ register[] t4 = treevals[4]
 register[] t5 = treevals[5]
 register[] t6 = treevals[6]
 
-# treevals holds level 3 values
-tree_values_ptr = tree_values_ptr + 7
-treevals = @tree_values_ptr
-tree_values_ptr = tree_values_ptr - 7
-
-register[] b0 = treevals[0]
+treevals = @14
 register[] b1 = treevals[1]
+register[] b2 = treevals[2]
+register[] b3 = treevals[3]
+register[] b4 = treevals[4]
 
+register inp_values_ptr = @6
 end global
 """
 
@@ -46,9 +47,6 @@ v = @tidxlen
 """
 
 level0_header = """
-# p1 = t0
-# v = v ^ p1
-
 v = v ^ t0
 """
 
@@ -74,57 +72,61 @@ idx = idx * 2 + p1
 v = v ^ t
 """
 
+level2_footer="""
+p1 = v % 2
+p2 = p1 ? -5 : -6
+# p2 = p1 + -6
+idx = idx * 2 + p2
+"""
+
 level3_header = """
 t = @idx[]
+v = v ^ t
+"""
+
+level3_flow_based_header = """
+
+t = treevals[0]
+
+p1 = treevals[5]
+p2 = idx - 19
+t = p2 ? t : p1
+
+p2 = p2 + 2
+t = p2 ? t : b3
+
+p2 = p2 + 2
+t = p2 ? t : b1
+
+p1 = treevals[7]
+p2 = p2 + -6
+t = p2 ? t : p1
+
+p2 = p2 - -5
+t = p2 ? t : b2
+
+p2 = p2 - 2
+t = p2 ? t : b4
+
+p1 = treevals[6]
+p2 = p2 - 2
+t = p2 ? t : p1
+
 v = v ^ t
 """
 
 level_footer="""
 p1 = v % 2
 p2 = p1 ? -5 : -6
-# p2 = p1 - 6
+# p2 = p1 + -6
 idx = idx * 2 + p2
-"""
-
-level3_flow_based_header = """
-idx = idx - 16
-idx = idx + 2
-# idx in [0, 7]
-
-t = treevals[7]
-t = idx ? t : b0
-
-# p1 = treevals[1]
-idx = idx - 1
-t = idx ? t : b1
-
-p2 = treevals[2]
-idx = idx - 1
-t = idx ? t : p2
-
-p1 = treevals[3]
-idx = idx - 1
-t = idx ? t : p1
-
-p2 = treevals[4]
-idx = idx - 1
-t = idx ? t : p2
-
-p1 = treevals[5]
-idx = idx - 1
-t = idx ? t : p1
-
-p1 = treevals[6]
-p2 = idx - 1
-t = p2 ? t : p1
-
-v = v ^ t
 """
 
 level3_flow_based_footer = """
 p1 = v % 2
-idx = idx + 16
-idx = idx * 2 + p1
+p2 = p1 ? -5 : -6
+# p2 = p1 + -6
+idx = idx * 2 + p2
 """
 
 computation="""
@@ -156,68 +158,105 @@ footer="""
 @tidxlen = v
 """
 
-def input_to_program_text(height, batch_size, rounds) -> str:
-#     with open('./p.txt') as f:
-#         return f.read()
-    # global, thread_preamble 
-    # level0_header computation level0_footer
-    # level1_header computation level_footer
-    # level2_header computation level_footer
-    # level3_header computation level_footer
-    # level3_header computation level_footer
-    # ...
-    # last level: level3_header computation [no level_footer for last round since indices wrap around]
-    # level0_header computation level0_footer
-    # ....
-    # footer
+def make_template(size, special_nodes: set[int]):
+    assert size > 0, f"Invalid size {size}. Should be > 0"
+    for x in special_nodes:
+        assert 0<=x and x < size, f"Invalid special node: {x}. Should be in [0, {size})"
 
+    specials = []
+    standards = []
+    start = -1
+
+    for i in range(0, size):
+        special = i in special_nodes
+        prev_special = (i-1) in special_nodes
+
+        if i == 0 or prev_special != special:
+            if start >= 0:
+                (standards if special else specials).append((start, i))
+            start = i
+
+    (specials if size - 1 in special_nodes else standards).append((start, size))
+    print(f"Specials = {specials}, standards = {standards}")
+
+    if len(specials) == 0:
+        return "\n$standard$\n"
+
+    if len(standards) == 0:
+        return "\n$special$\n"
+
+    template = "\n\n"
+    for idx, item in enumerate(specials):
+        start, end = item
+        template += "eliftid " if idx > 0 else "iftid "
+        template += f"range({start}, {end})"
+        template += "\n"
+        template += "$special$"
+        template += "\n"
+
+    for idx, item in enumerate(standards):
+        start, end = item
+        template += "eliftid " if idx < len(standards) - 1 else "elsetid "
+        template += f"range({start}, {end})" if idx < len(standards) - 1 else ""
+        template += "\n"
+        template += "$standard$"
+        template += "\n"
+
+    template += "endiftid\n\n"
+    return template
+
+
+def l3(size, special_nodes: set[int]):
+    template = make_template(size, special_nodes)
+
+    def indent(s):
+        return textwrap.indent(s, '    ')
+
+    header = template.replace('$special$', indent(level3_flow_based_header))\
+            .replace('$standard$', indent(level3_header))
+
+    footer = template.replace('$special$', indent(level3_flow_based_footer))\
+            .replace('$standard$', indent(level_footer))
+
+    return header, footer
+
+
+def input_to_program_text(height, batch_size, rounds) -> str:
     ret = ""
     ret += global_preamble
     ret += thread_preamble
 
-    l3_conditional_range = 32
-
-    l3_conditional_header = f"""
-iftid range(0, {l3_conditional_range})
-{level3_flow_based_header}
-elsetid
-{level3_header}
-endiftid
-    """
-
-    l3_conditional_footer = f"""
-iftid range(0, {l3_conditional_range})
-{level3_flow_based_footer}
-elsetid
-{level_footer}
-endiftid
-    """
     use_custom = lambda: True and level == 3 #and r == rounds - 2
+    nthreads = batch_size // VLEN
 
     for r in range(0, rounds):
-        ret += f"\n######### Round {r} #########"
+        ret += f"\n######### Round {r} #########\n"
         level = r % (height+1)
         custom = use_custom()
 
-        if custom:
-          ret += l3_conditional_header
-        elif level == 0:
-          ret += level0_header
-        elif level == 1:
-          ret += level1_header
-        elif level == 2:
-          ret += level2_header
-        else:
-          ret += level3_header
-        
-        ret += computation
+        usecustom = True
+        l3round1 = usecustom and level == 3 and r == 3
+        l3round2 = usecustom and level == 3 and r > 3
 
-        if level == height or r == rounds - 1:
-          pass
-        elif custom:
-          ret += l3_conditional_footer
+        if level == 0:
+            h, f = level0_header, level0_footer
+        elif level == 1:
+            h, f = level1_header, level1_footer
+        elif level == 2:
+            h, f = level2_header, level2_footer
+        elif l3round1:
+            h, f =  l3(nthreads, set(range(2, nthreads, 1)))
+        elif l3round2:
+            h, f =  l3(nthreads, set(range(0, nthreads, 1)))
         else:
-          ret += (level0_footer if level == 0 else (level1_footer if level == 1 else level_footer))
+            h, f = level3_header, level_footer
+        
+        ret += h
+        ret += computation
+        if level == height or r == rounds - 1:
+            f = ""
+        ret += f
+
 
     ret += footer
 
@@ -225,37 +264,3 @@ endiftid
         file.write(ret) 
     return ret
 
-old_level0_header = """
-t = treevals[0]
-v = v ^ t
-"""
-
-old_level0_footer = """
-p1 = v % 2
-idx = p1 ? 9 : 8
-
-#idx = p1 + 8 # SLOWER
-"""
-
-old_level1_header = """
-p2 = treevals[2]
-t = treevals[1]
-t = p1 ? p2 : t
-v = v ^ t
-"""
-
-old_level_footer="""
-p1 = v % 2
-p1 = p1 ? -5 : -6
-#p1 = p1 - 6
-idx = idx * 2 + p1
-"""
-
-old_level2_header = """
-t = treevals[3]
-p2 = treevals[4]
-p1 = idx < 11 ? t : p2
-p2 = 12 < idx ? t6 : t5
-t = idx < 12 ? p1 : p2
-v = v ^ t
-"""
